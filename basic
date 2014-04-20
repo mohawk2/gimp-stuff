@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+
+use Gimp ":auto";
+use Gimp::Fu;
+
+# Register extension to gimp
+register ... ;
+    
+exit main();  # Handle over control to gimp

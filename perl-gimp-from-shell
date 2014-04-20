@@ -1,0 +1,2 @@
+uni -o /tmp/uni.png -size 100 -color purple
+basic-logo -font 'utopia 100' -o /tmp/bl.ppm -text "Perl rules"

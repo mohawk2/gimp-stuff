@@ -1,0 +1,778 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<title>A Tutorial for Perl Gimp Users</title>
+    <link rel="stylesheet" href="dov-colors.css" type="text/css" />
+</head>
+<:
+
+BEGIN {
+    $sec=0;
+    $subsec=0;
+    open(TOC, "perl-toc.html");
+    $toc = join("", <TOC>);
+    open(TOC, ">perl-toc.html");
+    print TOC "<ul>\n";
+}
+
+END {
+    print TOC "</ul>\n";
+    close(TOC);
+}
+
+sub html_quote {
+    my $html = shift;
+    $html=~ s/&/&amp;/g;
+    $html=~ s/</&lt;/g;
+    $html=~ s/>/&gt;/g;
+    return $html;
+}
+
+sub warning {
+    my $text = shift;
+    print
+        "<center>\n"
+       ."  <table border width=75%>\n"
+       ."    <tr><td bgcolor=#ffffcc><font color=#800040><h2 align=center>Note!</h3></font><font color=#800000 size=+1>$text</font>"
+       ."  </table>\n"
+       ."</center>\n";
+}
+
+sub section {
+   $sec++;
+   $subsec=0;
+   print "<h2><a name=\"SEC$sec\">$sec. @_</a></h2>\n";
+   print TOC "<li> <a href=\"#SEC$sec\">$sec. @_</a></li>\n";
+}
+
+sub subsection {
+   $subsec++;
+   print "<h3><a name=\"SEC$sec.$subsec\">$sec.$subsec. @_</a></h3>\n";
+   print TOC "<li> <a href=\"#SEC$sec.$subsec\">$sec.$subsec. @_</a></li>\n";
+}
+
+sub mycomment {
+   print "<i><font color=\"#8B5A00\">@_</font></i><p>";
+}
+
+sub dtb { print "<dt><b>@_</b>" }
+
+sub pdb {
+    my($name, $blurb, $in, $out, $help) = @_;
+    my $nin = @$in;
+    my $nout = @$out;
+    my $tablecolor = "#e0e0e0";
+    my $th = "th valign=top";
+    my $td = "td valign=top";
+
+    print "<p><table><tr><td bgcolor=$tablecolor>\n";
+    print "<table>\n";
+    print "<tr><$th align=right>Name:</th><td bgcolor=#e0e0ff colspan=3>$name</td></tr>\n";
+    print "<tr><$th align=right>Blurb:</th><$td colspan=3>$blurb</td></tr>\n";
+    my $first=1;
+    foreach $i (0..$nin-1) {
+       print "<tr>\n";
+       if ($i == 0) {
+           print "<$th align=right valign=top>In:</th>";
+       }
+       else {
+           print "<$th></th>";
+       }
+       print "<$td>$in->[$i][1]</td><$td>$in->[$i][0]</td><$td>$in->[$i][2]</td>\n";
+       print "</tr>\n";
+    }
+    foreach $i (0..$nout-1) {
+       print "<tr><$th align=right>Out:</th></tr>" if $i==0;
+       print "<tr><td></td>";
+       print "<$td>$out->[$i][1]</td><$td>$out->[$i][0]</td><$td>$out->[$i][2]</td>\n";
+       print "</tr>\n";
+    }
+    if ($help) {
+        print "<tr><$th valign=top>Help:</th><td colspan=3>$help</td></tr>";
+    }
+    print "</table>\n";
+    print "</table></p>\n";
+}
+
+sub code_snippet {   # usage: code_snippet($filename, title)
+   my $filename = shift;
+   my $title = shift || "$filename";
+   my $snippet = shift;
+   my $lineno = 0;
+   my $par;
+   $par = "<table border>" .
+           "<tr><th bgcolor=#E0E0FF><a href=\"$filename\">$title</a>" .
+	   "<tr><td bgcolor=#FFE0E0><pre>";
+   open(IN, $filename);
+   while(<IN>) {
+       chomp;
+       $_ = html_quote($_);
+       $lineno++;
+       my $pref = "     ";
+       $pref = sprintf("%3d: ", $lineno);
+       $par.= "<font size=-1 color=red>$pref </font>$_ \n";
+   }
+   close(IN);
+   chop($par);
+   $par.= "</pre></table><br>";
+   print $par;
+}
+$tpix="<img src=\"tpix.gif\" width=0>";
+:>
+
+<body>
+<div class="box">
+<h1 align=center>A Tutorial for Perl Gimp Users<br>
+  		Updated for Gimp 2.0<br>
+    <font size=-1>&#169; Dov Grobgeld &lt;<a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a>&gt;</font><br>
+    <font size=-1>Last modified: 2014-04-20</font><br>
+    <font size=-1>Original at: <a href="http://github.com/dov/gimp-tutorials/perl-tut.html">http://github.com/dov/gimp-tutorials/perl-tut.html</a></font>
+</h1>
+
+<h2>Table of contents</h2>
+<: print $toc :>
+
+<: section("Comments to version 2.0") :>
+I have now gone through the tutorial and made sure that all the
+examples work with version 2.0 of the Gimp and with the
+perl gimp plugin 2.0.
+<p>
+Some of the comments may not be up to date though.
+<p>
+  <i>Dov Grobgeld 2004-03-27</i>
+<p>
+
+<: section("Background") :>
+<blockquote>
+One of the wonderful features of GIMP is that it all its functionality
+may be accessed through scripting. So far most of the script programming
+for Gimp has been done through Scheme through Script-Fu. Unfortunately
+the Scheme environment Gimp provides is very primitive, e.g. without
+any reasonable error handling. Furthermore, must users are not familiar
+with scheme as a language. Some users may therefore prefer to write
+scripts for the Gimp in Perl.
+<p>
+
+Perl as a language is probably more familiar to the web-literate users,
+as it is the major language for writing CGI scripts. Now, 
+Gimp scripts may also be written with Perl. This tutorial will describe
+how to write such plug-ins and scripts for Gimp.<p>
+
+As there are several excellent tutorial texts describing the perl
+language, this tutorial will assume at working knowledge of Perl,
+and will instead concentrate on the use GIMP together with the of the
+perl modules Gimp and Gimp::Fu, written by Marc Lehmann, <a href="mailto:pcg@goof.com">pcg@goof.com</a>.
+
+</blockquote>
+
+<: section("What you need") :>
+
+<: 0&&warning(qq(After a long time of using the perl Gimp module together
+   with Gimp-1.0, and finding it more and more difficult, I finally
+   moved on to the beta version Gimp-1.1, Gtk-1.1 and Gimp-1.093. This
+   tutorial now reflects this advanced version. If someone with older
+   versions of Gimp would like to provide scripts that work under this
+   older version, I'll be happy to include links to them.)) :>
+           
+<blockquote>
+  The Perl::Gimp tutorial scripts have been tested with the following
+  versions:
+  <OL>
+    <LI> Gimp version 2.0 or later, with all its prerequisites. </LI>
+    
+    <LI> Perl version 5.8.0 or later. </LI>
+    
+    <LI> The perl module Gtk2, version 1.0, available from <a href="http://gtk2-perl.sourceforge.net/">http://gtk2-perl.sourceforge.net</a> </LI>
+    
+    <LI> The Gimp module, version 2.0pre1 or later, available from
+    <a href=" ftp://ftp.gimp.org/pub/gimp/plug-ins/v2.0/perl/"></a> ftp://ftp.gimp.org/pub/gimp/plug-ins/v2.0/perl/</LI>
+  </OL>
+  Perl and all its associated modules are available in source form from
+  the Perl Comprehensive Archive network, CPAN. It is also possible
+  to download them in RPM format from the ftp.gimp.org website.
+</blockquote>
+
+<: section("The Gimp module") :>
+<blockquote>
+Most scripts make use of the simplified interface Gimp::Fu provided
+with the Gimp module. Gimp::Fu provides a framework for entering
+parameters to the script in a frame like interface, just like Script-Fu,
+but also allows running of the script in batch mode from the command line.
+This tutorial will go into detail descriptions of the construction of
+a Gimp::Fu script, but before we do this, here is the general framework
+of a Perl-Fu script.<p>
+
+<: code_snippet("basic") :>
+
+The interesting items to note in the script is the use of the two
+modules <tt>Gimp</tt> and <tt>Gimp::Fu</tt>, the register function,
+which will be described in detail below, and the way the control is
+handed over to <tt>Gimp</tt> module on line 9. The use of the
+<tt>":auto"</tt> statement makes perl automatically include all of the
+gimp PDB functions and constants into the perl name space.
+
+</blockquote>
+
+<: section("The GIMP PDB") :>
+<blockquote>
+Before going into the details of the Perl-Fu script, we will
+describe how to access the various the functionality of GIMP.  All
+functions known to GIMP are available through the procedural database
+(PDB). All the PDB functions may be called from perl, as will be seen
+below.  These PDB functions are either internal to gimp, or have been
+made available through a plug-in or a script extension, but as far as
+the caller is concerned there is no difference. As we will see below,
+when a perl function is registered through the <tt>register</tt>
+function, it will appear in the PDB as well.
+
+<p> <!-- This is broken! Gimp/perl comes with a PDB browser available in 
+<b>Xtns&gt;PDB Explorer</b>. (There is another PDB browser available
+in <b>Xtns&gt;DB Browser</b> but the PDB Explorer is more suited 
+for Perl users.) --!> Gimp comes with a PDB browser available
+in <b>Xtns&gt;DB Browser</b>. This browser provides a way of seeing
+all the functions in the PDB, as well as their input and output
+parameters. E.g. the DB Browser entry for
+<tt>gimp-image-new</tt>, which will be used in the example below
+looks like this:
+<p>
+<: pdb("gimp-image-new",
+       "Creates a new Image with the specified with, height, and type",
+       [ ["width", "INT32", "The width of the image"],
+         ["height", "INT32", "The height of the image"],
+         ["type",   "INT32",  "The type of image { GIMP_RGB (0), GIMP_GRAY (1), GIMP_INDEXED (2) }"],
+	 ],
+	 [ ["image", "IMAGE", "The ID of the newly created image"] ],
+	 "Creates a new image, undisplayed with the specified extents and type. A layer should be created and added before this image is displayed, or subsequent calls to 'gimp_display_new' with this image as an argument will fail. Layers can be created using the 'gimp_layer_new' commands. They can be added to an image using the 'gimp_image_add_layer' command"
+	 ) :>
+
+All the the constants mentioned in the PDB Explorer have been defined
+within Gimp::Fu and may be used within perl. E.g. I.e. a call to
+create a new image of size 100x150 of type RGB looks as follows:
+
+<pre>
+   $img = gimp_image_new(100, 150, RGB)</pre>
+
+Note that perl is using underline characters where the DB browser
+uses hyphens! The PDB entry above shows that <tt>gimp-image-new</tt>
+is called with three parameters width, height, type. These are all
+of type INT32. This type and other types will be explained below.
+<p>
+Script-Fu scripts are called just like any other script according
+to the PDB signature in the PDB browser. E.g. to run the
+script-fu-basic1-logo just do:
+<pre>
+script_fu_basic1_logo("Hello", 72,
+                      "Utopia 72", 
+                      [0,0,0],[255,255,255]);</pre>
+
+<:warning("When calling a PDB function from Perl::Gimp that
+has an image and a drawable as the two first arguments, only the
+drawable should be given as argument in the calling sequence."):>
+  
+</blockquote>
+
+<: subsection("Gimp::Fu and the register function") :>
+<blockquote>
+  Gimp-Fu is perl's answer to Script-Fu. It provides a simplified method
+  for accepting parameters for a script through a Gtk interface,
+  just like script-fu, but as we shall see below, it has some additional
+  bells and whistles.<p>
+
+  The main function for a Gimp-Fu script is the <tt>register</tt> function.
+  This function declares the interface of the script to gimp. The
+  <tt>register</tt> function takes the following 10 parameters, that must
+  all be provided:
+  <OL>
+    <LI> The name of the function - a string. This is the name of the function
+         as it will be known in the PDB. </LI><P>
+    
+    <LI> A small description - a string </LI><p>
+    
+    <LI> A help text - a string </LI><p>
+    
+    <LI> The authors name - a string </LI><p>
+    
+    <LI> The copyright of the script - a string</LI><p>
+    
+    <LI> Creation date - a string </LI><p>
+    
+    <LI> Menu path - a string. The path has one of the two forms:
+      <OL>
+	<LI> "&lt;Toolbox&gt;/Xtns/Perl-Fu/Script Name" </LI>
+	<LI> "&lt;Image&gt;/Perl-Fu/Script Name" </LI>
+      </OL>
+      If form 1. is given, then the script is a standalone script
+      that appears in the menu hierarchy under Xtns/Perl-Fu and
+      takes all its inputs through the Gimp::Fu interface frame.
+      If form 2. is given on the other hand, then the script
+      is tied to the image menu popped up through the right hand
+      button over any image. In this case Gimp::Fu will add as
+      the first two parameters to the script the image and the
+      drawable active when the script was invoked.
+    </LI><p>
+
+    <LI> The acceptable image types - a string. This list contains
+         a list of image types acceptable. This field is only used
+         for scripts that are in the "&lt;Image&gt;" hieararchy.
+	 Possible values are listed in the table below:
+	     <: $th="<th bgcolor=#dfdfdf>";
+		$td="<td bgcolor=#dfdfee valign=top>" :>
+	     <table>
+	       <tr><:=$th:>value</th><:=$th:>meaning</th></tr>
+	       <tr><:=$td:>*<:=$td:>Any images are accepted</tr>
+               <tr><:=$td:>RGB <:=$td:>RGB images</tr>
+               <tr><:=$td:>RGBA <:=$td:>RGB images with alpha channels</tr>
+               <tr><:=$td:>GREY <:=$td:>Grey level images</tr>
+	     </table>
+	 
+    </LI><p>
+    <LI> Parameters - A reference to an array of parameters. (A reference
+      to an array in perl is simply an array written within square brackets).
+      Each parameter in turn is a reference to an array containg the
+      following four or five values:
+      <OL>
+	<LI> The type of the parameter. The types recognized by
+ 	    Gimp::Fu and their perl are given in the following table:
+	     <: $th="<th bgcolor=#dfdfdf>";
+		$td="<td bgcolor=#dfdfee valign=top>";
+		sub th { print "<th bgcolor=#dfdfdf @_>" };
+	     :>
+	     <table>
+	       <tr><:=$th:>Type</th><:th "width=30%":>Possible forms</th>
+                   <:th "width=50%":>Comment</tr>
+	       <tr><:=$td:>PF_INT<br>
+		           PF_INT32<br>
+		           PF_INT16<br>
+			   PF_INT8<br><:=$td:>42<:=$td:>A number. PF_INT is a synonym to PF_INT32.</tr>
+	       <tr><:=$td:>PF_VALUE<br>
+		           PF_FLOAT<br><:=$td:>3.141<:=$td:>A floating point number.
+               <tr><:=$td:>PF_TOGGLE<br>
+		           PF_BOOLEAN<:=$td:>0<br>1<:=$td:>A boolean value.
+               <tr><:=$td:>PF_SLIDER<br>
+		           PF_SPINNER
+	           <:=$td:>An integer value through a slider and a spinner interface. The range parameter should be specified and is interpreted as minimum, maximum, and step, e.g. [0,100,1].
+		   <:=$td:><:=$tpix:>
+               <tr><:=$td:>PF_FONT<:=$td:>-*-blippo-*-*-*-*-24-*-*-*-*-*-*-*<:=$td:>A font in X11 font format. This interface launches a font browser.
+               <tr><:=$td:>PF_STRING<:=$td:>"A string"<:=$td:>A string</tr>
+	       <tr><:=$td:>PF_COLOR<br>
+		           PF_COLOUR<:=$td:>[255,127,0]<br>
+				          <tt>#ff7f00</tt>
+	       <:=$td:>A color may either be expressed as a reference
+	              to an array of three components, or as a hexadecimal
+	              triple, proceeded by the hash sign.</tr>
+	       <tr><:=$td:>PF_TOGGLE<:=$td:>0<br>1<:=$td:>A boolean toggle
+	       <tr><:=$td:>PF_IMAGE<:=$td:>-<:=$td:>An image
+	       <tr><:=$td:>PF_DRAWABLE<:=$td:>-<:=$td:>A drawable.
+	       <tr><:=$td:>PF_BRUSH<:=$td:><:=$tpix:><:=$td:>A brush
+	       <tr><:=$td:>PF_GRADIENT<:=$td:><:=$tpix:><:=$td:>A gradient
+	       <tr><:=$td:>PF_PATTERN<:=$td:><:=$tpix:><:=$td:>A pattern
+	     </table>
+	</LI>
+	
+	<LI> The name of the parameter - a string </LI>
+	
+	<LI> A help text for the parameter </LI>
+	
+	<LI> Default value for the parameter. This should be given in
+	     the form listed in the table above.
+ 	</LI>
+	
+	<LI> An array defining allowed range for the value. This is
+	     only possible for PF_SLIDER and PF_SPINNER.</LI>
+      </ol><P>
+
+      <LI> A reference to an array of return types of the sub in the
+	   11th parameter. <p>
+      </LI>
+      
+      <LI> The sub to be called - a reference to a sub . This
+	subroutine will be called when the associated menu entry
+	declared through the <i>Menu path</i> described above.
+	When the sub is called it is passed as arguments the list
+	of parameters declared in field 9, declared above, and in
+	the case of a "&lt;Image&gt;..." script, the active image
+	and layer as first and second parameters.
+	<p>
+	  A reference to a sub in perl may be declared in two ways.
+	  Either by declaring a subroutine at a different place in the
+	  source file, e.g. <tt>sub run</tt> and reference it by
+	  writing <tt>\&run</tt>. An alternative way is to write it
+	  inline by simply writing:
+	  <pre>
+    sub { ($text, $color) = @_ ; ... }</pre>
+  The sub is expected not need to display a new image after it has
+  created it. Instead it is expected to return the new image or images
+  that were created in accordance with the return types declared
+  in parameter 10 of the <tt>register</tt> call described above.
+  This behaviour has been added in order to be able
+  to call the sub noninteractively. More about that behaviour below.
+	</LI>	
+      </OL>
+    </LI>
+</blockquote>
+
+<: subsection("A commented script") :>
+<blockquote>
+The following Gimp::Fu script example shows the steps described in the
+previous section. It registeres a script that takes two values, the size
+of the image and a color, and then produces an image of the requested
+size with the requested color. Quite useless, but is shows the importent steps
+of how to register a script, how to create a new image, and how
+to access some PDB functions.<p>
+
+<: code_snippet("uni") :>
+
+Most of these commands are directly copied out the PDB. <p>
+
+This script shows the essential steps of producing a stand-alone
+script:
+<blockquote>
+<table>
+  <tr><th>line(s)</th><th>Description</th>
+  <tr><td>10</td><td> Creating a new image.</td></tr>
+  <tr><td>13-14</td><td> Creating one or more layers.</td></tr>
+  <tr><td>17</td><td> Attaching the layer to the image. </td></tr>
+  <tr><td>19-23</td><td> Do some painting operations in the layers. </td></tr>
+  <tr><td>26</td><td> Return the image to the caller</td></tr>
+  <tr><td> 29-42</td><td> Registration of the extension</td></tr>
+</table>
+</blockquote>
+
+To test the script, save it in the directory <tt>$HOME/.gimp-1.2/plug-ins</tt>.
+It must then be made executable through the command:
+<pre>
+     chmod +x $HOME/.gimp-1.2/plug-ins/uni
+</pre>
+
+Then start gimp.  It is generally a good idea to test the
+syntax of the script with <tt>perl -c</tt> before starting <tt>gimp</tt>.
+(A more official way to add scripts is to use the <tt>gimptool --install-bin</tt> command).
+<p>
+<b>Note:</b> Due to a bug in gimp (verified for version 1.2)
+it is not possible to add scripts once gimp is running. On the other hand,
+it is possible to change a script which has already been registered, as
+long as the parameters don't change.<p>
+
+The script is now accessible through the menu system through the
+<b>Xtns</b> top menu:
+<center>
+  <img src="uni-menu.png">
+</center>
+<p>
+When choosing this menu entry the following screen is popped up:<p>
+<center>
+  <img src="uni-entry.png">
+</center>
+<p>
+Choosing the default values results in the image:
+<p>
+<center>
+<img src="uni-result.png">
+</center>
+</blockquote>
+
+<: section("Object oriented syntax") :>
+<blockquote>
+  Gimp::Fu provides an alternative object-oriented syntax for the
+  image and the drawable commands. Here is a table showing the procedural
+  vs the object oriented syntax for a few commands:<p>
+
+  <table>
+    <tr><th bgcolor=#E0E0E0>procedural syntax
+	<th bgcolor=#E0E0E0>object oriented syntax
+    <tr><td bgcolor=#FFE0E0>gimp_image_add_layer($drw,-1);
+        <td bgcolor=#FFE0E0>$img->add_layer($drw, -1);
+    <tr><td bgcolor=#FFE0E0>gimp_drawable_width($drw);
+        <td bgcolor=#FFE0E0>$drw->width();
+  </table>
+  <p>
+  The substitution rule for converting a PDB turning into a method is
+  as simple as erasing ``<tt>gimp_image_</tt>'' from the beginning
+  of the function call and calling this method through the image object.
+  Similarly for the <tt>gimp_drawable_...</tt> functions.<p>
+
+  Note that the object oriented syntax is only syntactic sugar that
+  makes the calling syntax cleaner in some cases. The error messages
+  are still given in the procedural format.
+</blockquote>
+
+<: section("Painting areas with selections") :>
+<blockquote>
+In the <tt>uni</tt> script the function <tt>gimp_edit_fill</tt> was called
+to fill the whole image. Looking at the info for
+<tt>gimp_edit_fill</tt> in the DB browser we find the following:
+<: pdb("gimp_edit_fill", "Fill selected area of drawable",
+       [["drawable", "DRAWABLE", "The drawable to fill from"],
+	["fill_type", "INT32", "The type of fill: GIMP_FOREGROUND_FILL (0), GIMP_BACKGROUND_FILL (1), GIMP_WHITE_FILL (2), GIMP_TRANSPARENT_FILL (3), GIMP_PATTERN_FILL (4)"]
+],
+       "",
+       "This procedure fills the specified drawable with the fill mode. If the fill mode is foreground, the current foreground color is used. If the fill mode is background, the current background color is used. Other fill modes should not be used. This procedure only affects regions within a selection if there is a selection active."
+
+) :>
+
+<p>
+Thus, if a selection is active when <tt>gimp_edit_fill</tt>
+is called only the selection is painted. Note also that you should
+erase the "GIMP_" part of the constant names.
+
+<p>There are lots of ways of
+choosing a selection as can be seen when searching for a ``select''
+in the PDB. The example below uses <tt>gimp_rect_select</tt>,
+whose entry in the PDB looks as follows:
+<: pdb("gimp_rect_select",
+       "Create a rectangular selection over the specified image",
+       [ ["image", "IMAGE", "The image"],
+         ["x", "FLOAT", "x coordinate of upper-left corner of rectangle"],
+         ["y", "FLOAT", "y coordinate of upper-left corner of rectangle"],
+         ["width", "FLOAT", "the width of the rectangle: width \> 0"],
+         ["height", "FLOAT", "the height of the rectangle: width \> 0"],
+         ["operation", "INT32", "the selection operation: {GIMP_CHANNEL_OP_ADD (0), GIMP_CHANNEL_OP_SUB"
+          . "(1), GIMP_CHANNEL_OP_REPLACE (2), GIMP_CHANNEL_OP_INTERSECT (3) }"],
+         ["feather", "INT32", "feather option for selections"],
+         ["feather_radius", "FLOAT", "radius for feather operation"] 
+],
+       "",
+       "This tool creates a rectangular selection over the specified image. The rectangular region can be either added to, subtracted from, or replace the contents of the previous selection mask. If the feather option is enabled, the resulting selection is blurred before combining. The blur is a gaussian blur with the specified feather radius."       
+) :>
+
+A simple use of this function which selects a rectangle in the middle
+of an image and paints that rectangle with a user defined color.
+This example also introduces a couple of new features we haven't seen
+before:
+<UL>
+  <LI> The script is associated with an image since its menu
+       path starts with "&lt;Image&gt;/...". Note that as a result of this
+       the callback sub in line 13 receives two additional
+       parameters, the active image and the seleced drawable.</LI>
+  <LI> The use of a subroutine without a name as a parameter to
+       <tt>register</tt></LI>
+  
+  <LI> The use of the PDB functions <tt>gimp_undo_push_group_start</tt>
+       and <tt>gimp_undo_push_group_end</tt>. These functions declare
+       an undo group. When an undo is done on the image, instead of
+       having the individual operators undo, all the actions between
+       the undo start and the undo group calls will be undone at once.</LI>
+  
+  <LI> The return type of the register function defines what new
+       images should be displayed by gimp. In this case we don't
+       want to display any new images and therefore return an empty array.
+  </LI>
+</UL>
+
+<: code_snippet("paint-select") :>
+
+The result when run on our previous image:
+<center>
+<img src="paint-select.png">
+</center>
+
+</blockquote>
+
+<: subsection("Complex selections") :>
+<blockquote>
+  Besides rectangular selections elliptical selections may also be
+  created through the PDB functions <tt>gimp_ellipse_select()</tt>
+  and <tt>gimp_free_select()</tt> which allows the selection of
+  ellipses and polygons.
+  <p>
+  More complex selections may be created through the channel mechanism.
+  The PDB <tt>gimp_channel_new()</tt> creates a new channel. The channel
+  is a drawable that may be painted into, just like any other drawable,
+  but with the difference that it is always a grey level image. Once
+  the channel is finished, the channel may be loaded into the selection 
+  through the PDB function <tt>gimp_selection_load()</tt>.
+  <p>
+    Search for ``select'' in the DB Browser to see a list of all the
+    selection related functions.
+</blockquote>
+
+<: subsection("Loops") :>
+<blockquote>
+In perl it is trivial to write loops that together with the various
+selecton tools gives powerful creative possibilities. Here is
+an example that mixes colors in circles. There is nothing really new
+here, but it shows the power of the what we have described above.
+<: code_snippet("circles") :>
+The result:
+<center>
+<img src="circles.png">
+</center>
+
+</blockquote>
+
+<: section("Creating text") :>
+
+<: subsection("Hello World - writing text in an image") :>
+<blockquote>
+
+To create text the PDB function <tt>gimp_text_fontname()</tt> may be
+used. In this function the font is specified in the X11 font conventions.
+
+<p> Here is an example of a script that creates an image containing
+"Hello world".
+<: code_snippet("hello-world1") :>
+
+The result:
+<center>
+<img src="hello-world1.png">
+</center>
+The script makes uses a simple regular expression to extract the
+font size from the font name. This is necessary as the authors
+of <tt>gimp_text_fontname</tt> decided that the font size within the fontname
+is ignored.
+<p>
+One thing to note in this script is that the text that is created on
+line 24 is a <i>floating layer</i>, than needs to be anchored to its
+parent layer. This is done in line 27 through the call to
+<tt>gimp_floating_sel_anchor()</tt>.<p>
+
+This script suffers from the problem that the image size is unrelated
+to the text size. This is taken care of in the following more
+complex example which shows the basic steps for a logo generating
+script. 
+<UL>
+  <LI> Creation of an image arbitrary size </LI>
+  <LI> Creation of a background drawable of an arbitrary size </LI>
+  <LI> Creation of text layer which exactly fits the text with the command
+       <tt>gimp_text_fontname()</tt>.
+  <LI> Resizing the image and the background to the size of the text layer. </LI>
+</UL>
+The result is an image composed of two layers; a transparent text layer
+on top of a uniform background.
+<p>
+
+<: code_snippet("basic-logo") :>
+  <p>
+  Note the special syntax of <tt>gimp_image_text_fontname()</tt>
+  in line 24 in <tt>basic-logo</tt> with an image specified for a
+  first parameter, and the drawable = -1. This is in contradiction
+  to the rule above that the image should not be specified for 
+  PDB functions that take both an image and a drawable as the first
+  two parameters. But since
+  the drawable=-1, which has no image related to it, an image explicitely
+  be provided. The special case drawable=-1 means that instead of
+  creating a floating layer, a new image layer will be created.
+
+  <p>
+    The result shown in the following dialog and the resulting image:
+    <p>
+<center>
+<img src="basic-logo-dialog.png"><img src="tpix.gif" width=20>
+<img src="basic-logo.png">
+</center>
+    <p>
+</blockquote>
+
+<: section("Floating selections") :>
+<blockquote>
+  When a region has been selected through one of the selection routines
+  the area outlined by the selection may be copied to the cut-buffer
+  through the <tt>gimp_edit_copy</tt> command. The cut-buffer may
+  subsequently be pasted into a different layer through the
+  <tt>gimp_edit_paste</tt> command. When a layer is pasted it becomes
+  a floating selection. This floating selection may be moved to
+  its required position by the command <tt>gimp_layer_set_offsets</tt>,
+  and finally it is pasted by the <tt>gimp_floating_sel_anchor</tt>
+  command. Another way of
+  determining the position of a pasted layer is to create a selection in
+  the target image before the cut-buffer is pasted. <p>
+
+  This is illustrated in the following program, which works on one image
+  and takes as a parameter an another image, which it concatinates to
+  the right of the first image. The lines 28-38 shows how the second
+  image is copied and glued into the first image.<p>
+  <: code_snippet("horiz-cat") :>
+</blockquote>
+
+<: section("The Perl Server and stand-alone scripts") :>
+<blockquote>
+  So far the scripts have all been started from the menu structure
+  within menu. But there is another possibility and that is to run
+  the scripts from the command line, as a normal perl program. When
+  run this way the script tries to connect to the Perl-Server, and
+  if it fails it will launch gimp on its own. If you plan to run
+  several scripts this way, it is obviously much faster to run the
+  Perl-Server since launching gimp takes quite a bit of time. The
+  perl-server may be started from the Xtns menu.
+  <p>
+
+  When a perl-fu script is run from the command line, the
+  result is the same as when it is run through the menus, except
+  of the fact that it may be run with the <tt>--output</tt> parameter
+  in case it will save the result to a file instead of displaying
+  it within gimp. This is great for batch creation of logos, etc. <p>
+
+  The filename for the <tt>--output</tt> has some special magic that
+  allows to set some special image saving parameters, like interlace,
+  quality factor, etc. See the Gimp::Fu man page for details.</t>
+
+  Note that the normal rules about image and file types are still valid,
+  thus e.g. in order to save an image as a gif file, it must be converted
+  from RGB to an indexed script. Currently this functionality must be
+  included in each script, but it is possible that a future version
+  of Gimp::Fu, includes this conversion as an option. <P>
+ 
+  Here are two invocations of the scripts declared above, but with output
+  written to a jpg file and a png file. As we said above, we can't save
+  them as gif as the scripts do not index the images.<p>
+
+  <: code_snippet("perl-gimp-from-shell") :>
+
+  Another importent use of this interface is that it enables running
+  the perl debugger on the perl-fu scripts.<p>
+  
+  <b>Note:</b> The image is saved to the directory
+  where gimp was started from and not to the directory in which the
+  scripts were invoked. Thus it is recommended to use a complete path.
+</blockquote>
+
+<: subsection("A shell for gimp-perl") :>
+<blockquote>
+  When using the perl-server it is not necessary to use <tt>Gimp::Fu</tt>
+  and the <tt>register</tt> function. Instead a sub named <tt>on_net</tt>
+  may be declared, which takes as a parameter a reference to a sub
+  routine that is called when gimp starts.
+  <p>
+  For a simple but powerful example of the use of the Gimp without
+  Fu, here is a an interactive perl gimp shell that may be run from
+  the command line:
+  <p>
+  <: code_snippet("pg-shell") :>
+    <p>
+  Here is an example of an interactive session with this shell:
+  <: code_snippet("interact") :>
+</blockquote>
+
+<: section("End notes") :>
+<blockquote>
+  This tutorial has covered only a small part of the possibilities
+  available to a script writer. In particular the following issues
+  available to Gimp::Perl scripts have not been covered:
+
+  <UL>
+    <LI> The possibility of writing customized Gtk interfaces. </LI>
+    
+    <LI> Writing fullfledged plug-ins that manipulate the tile data
+         through the Perl Data Language (PDL) module.</LI>
+    <LI> Using Perl::Gimp in a CGI environment. </LI>
+    <LI> How to fill with gradients in a plugin </LI>
+    <LI> How to do "free selections". </LI>
+  </UL>
+</blockquote>
+
+
+<: section("Links and references") :>
+<blockquote>
+  <UL>
+    <LI> <A HREF="scheme-tut.html">The scheme tutorial this tutorial is based on</A> </LI>
+    
+    <LI> <a href="http://www.gimp.org">The Gimp home page</a> </LI>
+    
+    <LI> <A HREF="http://registry.gimp.org/">Gimp Registry with Perl plug-ins</A> </LI>
+  </UL>
+</blockquote>  
+
+<hr>
+<address>Please send your comments to <a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></address>
+</box>
+</body> </html>

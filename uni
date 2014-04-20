@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+
+use Gimp ":auto";
+use Gimp::Fu;
+
+sub img_uni {
+    my ($size, $color) = @_;
+    
+    # Create a new image
+    $img = gimp_image_new($size, $size, RGB);
+
+    # Create a new layer
+    $layer = gimp_layer_new($img, $size, $size, RGB,
+			    "Layer 1", 100, NORMAL_MODE);
+
+    # add the layer to the image
+    gimp_image_add_layer($img, $layer, -1);
+
+    # Set the background to the required color
+    gimp_palette_set_background($color);
+
+    # Paint the layer 
+    gimp_edit_fill($layer, BACKGROUND_FILL);
+
+    # Return the image
+    return $img;
+}
+
+register
+    "img_uni",                 # fill in name
+    "Create a uniform image",  # a small description
+    "A tutorial script",       # a help text
+    "Dov Grobgeld",            # Your name
+    "Dov Grobgeld (c)",        # Your copyright
+    "2004-03-27",              # Date
+    "<Toolbox>/Xtns/Perl-Fu/Tutorial/Img Uni",   # menu path
+    "*",                       # Image types
+    [
+     [PF_INT,   "size", "Img size", 100],
+     [PF_COLOR, "color", "Img color", [255,127,0]]
+    ],
+    \&img_uni;
+
+exit main();

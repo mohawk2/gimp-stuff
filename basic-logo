@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+
+use Gimp ":auto";
+use Gimp::Fu;
+
+sub basic_logo {
+    my($font, $border, $text, $bgcolor, $fgcolor) = @_;
+
+    # Create a new image of an arbitrary size with 
+    $img = gimp_image_new(100, 100, RGB);
+    
+    # Create a new layer for the background of arbitrary size, and
+    # add it to the image
+    my $background = gimp_layer_new($img, 100, 100,
+				    RGB, "Background", 100,
+				    NORMAL_MODE);
+    gimp_image_add_layer($background, 1);
+
+    # Choose color of text
+    gimp_palette_set_foreground($fgcolor);
+
+    # Create the text layer. Using -1 as the drawable creates a new layer.
+    my ($size) = $font=~ /(\d+)/; # Extract font size
+    my $text_layer = gimp_text_fontname($img, -1, 0, 0, $text,
+					$border, 1, $size, POINTS, $font);
+
+    # Get size of the text drawable and resize the image and the
+    # background layer to this size.
+    my($width, $height) = ($text_layer->width, $text_layer->height);
+    gimp_image_resize($img, $width, $height, 0, 0);
+    gimp_layer_resize($background, $width, $height, 0, 0);
+
+    # Fill the background layer now when it has the right size.
+    gimp_palette_set_background($bgcolor);
+    gimp_edit_fill($background, BACKGROUND_FILL);
+    
+    return $img;
+}
+
+# register the script
+register "basic_logo", "basic logo", "basic logo",
+    "Dov Grobgeld", "Dov Grobgeld",
+    "2004-03-27",
+    "<Toolbox>/Xtns/Perl-Fu/Tutorial/Basic Logo", 
+    "*",
+    [
+     [PF_FONT,   "font",     "font",   "Utopia Bold 70"],
+     [PF_INT,    "border",   "border", "10"],
+     [PF_STRING, "text",     "text", "Hello world!"],
+     [PF_COLOR,  "bg_color", "Background color", [40,180,160]],
+     [PF_COLOR,  "fg_color", "Background color", [255,255,0]],
+    ],
+    \&basic_logo;
+
+# Handle over control to gimp
+exit main();

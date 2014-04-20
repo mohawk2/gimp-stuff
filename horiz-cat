@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+
+use Gimp qw( :auto );
+use Gimp::Fu;
+
+sub horiz_cat {
+    my($img1, $drw1, $drw2) = @_;
+
+    # Get image 2
+    $img1 = $drw1->get_image();
+    
+    my $img2 = $drw2->get_image();
+    my($w1, $h1) = ($drw1->width, $drw1->height);
+    my($w2, $h2) = ($drw2->width, $drw2->height);
+
+    # The new height is the maximum height of the images
+    my $hmax = $h1 > $h2 ? $h1 : $h2;
+
+    # Create an undo group
+    $img1->undo_group_start();
+    
+    # Resize the drawable layer to make room for the img
+    $img1->resize($w1+$w2, $hmax, 0, ($hmax-$h1)/2);
+    $drw1->resize($w1+$w2, $hmax, 0, ($hmax-$h1)/2);
+
+    # Copy $drawable2 and paste it into the new space of $drawable1
+    # select all of img2
+    $img2->selection_all();
+    $drw2->edit_copy();
+    $img2->selection_none();
+
+    # make a selection in img 1 where $drw2 is to be pasted
+    $img1->rect_select($w1, ($hmax-$h2)/2, $w2, $h2, 0,0,0);
+
+    # paste and then anchor it
+    my $floating_layer = $drw1->edit_paste(0);
+    $floating_layer->floating_sel_anchor();
+
+    # Close the undo group
+    $img1->undo_group_end();
+    
+    # Update the display
+    gimp_displays_flush();
+    
+    return undef;
+}
+
+# register the script
+register "horiz_cat", "Horizontal concat", "Horizontal Concat",
+    "Dov Grobgeld", "Dov Grobgeld", "2004-03-27",
+    "<Image>/Perl-Fu/Tutorial/Horizontal Concat", 
+    "*",
+    [[PF_DRAWABLE,   "drawable", "Drawable to concatinate", undef]],
+    \&horiz_cat;
+
+exit main();

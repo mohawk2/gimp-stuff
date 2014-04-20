@@ -1,0 +1,548 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<title>A Scheme Tutorial for Gimp Users</title>
+<!-- Changed by: Dov Grobgeld, 12-Feb-2002 -->
+</head>
+<:
+
+BEGIN {
+    $sec=0;
+    $subsec=0;
+    open(TOC, "toc.html");
+    $toc = join("", <TOC>);
+    open(TOC, ">toc.html");
+    print TOC "<ul>\n";
+}
+
+END {
+    print TOC "</ul>\n";
+    close(TOC);
+}
+
+sub html_quote {
+    my $html = shift;
+    $html=~ s/&/&amp;/g;
+    $html=~ s/</&lt;/g;
+    $html=~ s/>/&gt;/g;
+    return $html;
+}
+
+sub section {
+   $sec++;
+   $subsec=0;
+   print "<h2><a name=\"SEC$sec\">$sec. @_</a></h2>\n";
+   print TOC "<li> <a href=\"#SEC$sec\">$sec. @_</a></li>\n";
+}
+
+sub subsection {
+   $subsec++;
+   print "<h3><a name=\"SEC$sec.$subsec\">$sec.$subsec. @_</a></h3>\n";
+   print TOC "<li> <a href=\"#SEC$sec.$subsec\">$sec.$subsec. @_</a></li>\n";
+}
+
+sub dtb { print "<dt><b>@_</b>" }
+
+sub pdb {
+    my($name, $blurb, $in, $out, $help) = @_;
+    my $nin = @$in;
+    my $nout = @$out;
+    my $tablecolor = "#e0e0e0";
+    my $th = "th valign=top";
+    my $td = "td valign=top";
+
+    print "<p><table><tr><td bgcolor=$tablecolor>\n";
+    print "<table>\n";
+    print "<tr><$th align=right>Name:</th><td bgcolor=#e0e0ff colspan=3>$name</td></tr>\n";
+    print "<tr><$th align=right>Blurb:</th><$td colspan=3>$blurb</td></tr>\n";
+    my $first=1;
+    foreach $i (0..$nin-1) {
+       print "<tr>\n";
+       if ($i == 0) {
+           print "<$th align=right valign=top>In:</th>";
+       }
+       else {
+           print "<$th></th>";
+       }
+       print "<$td>$in->[$i][1]</td><$td>$in->[$i][0]</td><$td>$in->[$i][2]</td>\n";
+       print "</tr>\n";
+    }
+    foreach $i (0..$nout-1) {
+       print "<tr><$th align=right>Out:</th></tr>" if $i==0;
+       print "<tr><td></td>";
+       print "<$td>$out->[$i][1]</td><$td>$out->[$i][0]</td><$td>$out->[$i][2]</td>\n";
+       print "</tr>\n";
+    }
+    if ($help) {
+        print "<tr><$th valign=top>Help:</th><td colspan=3>$help</td></tr>";
+    }
+    print "</table>\n";
+    print "</table></p>\n";
+}
+
+sub xxpdb {
+    my($name, $blurb, $in, $out, $help) = @_;
+    my $nin = @$in;
+    my $tablecolor = "#e0e0e0";
+    my $th = "th";
+    my $td = "td";
+
+    print "<p><table><tr><td bgcolor=$tablecolor>\n";
+    print "<table>\n";
+    print "<tr><$th align=right>Name:</th><td bgcolor=#e0e0ff colspan=3>$name</td></tr>\n";
+    print "<tr><$th align=right>Blurb:</th><$td colspan=3>$blurb</td></tr>\n";
+    my $first=1;
+    foreach $i (0..$nin-1) {
+       print "<tr>";
+       if ($i == 0) {
+           print "<$th align=right valign=top>In:</th>";
+       }
+       else {
+           print "<$th></th>";
+       }
+       print "<$td valign=top>$in->[$i][0]</td><$td valign=top>$in->[$i][1]</td><$td valign=top>$in->[$i][2]</td>\n";
+       print "</tr>\n";
+    }
+    if ($help) {
+        print "<tr><$th>Help:</th><td>$help</td></tr>";
+    }
+    print "</table>\n";
+    print "</table></p>\n";
+}
+
+sub code_snippet {   # usage: code_snippet($filename, title)
+   my $filename = shift;
+   my $title = shift || "$filename";
+   my $snippet = shift;
+   my $lineno = 0;
+   my $par;
+   $par = "<table border>" .
+           "<tr><th bgcolor=#E0E0FF><a href=\"$filename\">$title</a>" .
+	   "<tr><td bgcolor=#FFE0E0><pre>";
+   open(IN, $filename);
+   while(<IN>) {
+       chomp;
+       $_ = html_quote($_);
+       $lineno++;
+       my $pref = "     ";
+       $pref = sprintf("%3d: ", $lineno);
+       $par.= "<font size=-1 color=red>$pref </font>$_ \n";
+   }
+   close(IN);
+   chop($par);
+   $par.= "</pre></table><br>";
+   print $par;
+}
+$tpix="<img src=\"tpix.gif\" width=0>";
+:>
+
+<body bgcolor=white>
+<h1 align=center>A Scheme Tutorial for Gimp Users<br>
+    Updated for Gimp-1.2<br>
+    <font size=-1>© Dov Grobgeld &lt;<a href="dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a>&gt;<br></font><br>
+    <font size=-1>Last modified: 2002-02-12</font><br>
+    <font size=-1>Original at: <a href="http://imagic.weizmann.ac.il/~dov/gimp/perl-tut.html">http://imagic.weizmann.ac.il/~dov/gimp/scheme-tut.html</a></font>
+
+</h1>
+
+<h2>Table of contents</h2>
+<: print $toc :>
+    
+<: section("Introduction") :>
+<blockquote>
+One of the wonderful features of GIMP is that it all its functionality
+may be accessed through scripting. The major scripting language for
+the GIMP that has been attached to it today is Scheme. This document
+will try to be a brief introduction to Scheme, just teaching the
+essentials in order to write script-fu scripts, without getting into
+the programming language theory that is so typical of other Scheme
+references.
+</blockquote>
+
+<: section("Expressions") :>
+<blockquote>
+Scheme is a lisp variants and all expressions are surrounded
+by parens. E.g. a list which will calculate the sum of 3 and 4 is
+written
+<pre>
+    (+ 3 4)</pre>
+The <tt>+</tt> sign is the addition function
+and 3 and 4 are the first and second parameters to this function.
+Expressions may be nested, so the expression (3+4)*(5/6) would in
+Scheme be written
+<pre>
+    (* (+ 3 4) (/ 5 6))</pre>
+White space has no importance so the above expression may as well
+be written:
+<pre>
+    (*
+      (+ 3 4)
+      (/ 5 6))</pre>
+</blockquote>
+
+<: section("Functions") :>
+<blockquote>
+Aside from the four arithmetic functions that are represented through
+the symbols <tt>+ - * /</tt> there are lots of other functions built
+into the language. All of them have the form
+<pre>
+    (foo param1 param2 ...)</pre>
+Additional functions may be defined by the user through the
+<tt>define</tt> keyword. E.g. a function that calculates the square
+value of its single argument may be declared like this
+<pre>
+    (define (square x) (* x x))</pre>
+and this function may be called through
+<pre>
+    (square 5)</pre>
+</blockquote>
+
+<: section("Variables and lists") :>
+<blockquote>
+Variables may be declared and set through the <tt>set!</tt> command.
+(These variables will be global but this should not bother the casual
+gimp programmer). Here are a couple of assignments:
+<pre>
+    (set! grey_value 85)
+    (set! angle (* (/ 30 180) 3.141)</pre>
+
+Lisp and its variants make heavy use of lists. Script-fu is no
+exception and it uses e.g. a list of three elements to write a
+RGB color. E.g. the color orange would be written
+<pre>
+    '(255 127 0)</pre>
+The ' sign is necessary in order to tell scheme that this is a literal
+list. If the ' was omitted scheme would try to look up a function with
+the name 255 and send it the two parameters 127 and 0, which is
+obviously not what we wants.
+<p>
+To create a variable called orange with the above value and then
+set the background color to it we may do
+<pre>
+   (set! orange '(255 127 0))
+   (gimp-set-background-color orange)</pre>
+</blockquote>
+
+<:subsection("car, cdr and friends (*)"):>
+<blockquote>
+A list in Scheme is always composed of a head and a tail. The
+head is the first entry in the list, and the tail is the list of
+the rest of the elements. This means that the list <nobr><tt>(255 127
+63)</tt></nobr> really means <nobr><tt>(255 (127
+(63 ())))</tt></nobr> but Scheme allows the previous form as a shortcut.
+The <tt>car</tt> function is used to return the head of the list
+and the <tt>cdr</tt> (usually pronounced cudder) is used to get
+the tail of the list.<p>
+[The following is a test of the above functions which may interactively
+be conducted in the Script-Fu console.]
+<pre>
+    <b>=&gt; (set! color '(255 127 63))</b>
+    (255 127 63)
+    <b>=&gt; (car color)</b>
+    255
+    <b>=&gt; (cdr color)</b>
+    (127 63)</pre>
+To get the blue component of a color it is necessary to apply
+the <tt>cdr</tt> function twice and then the <tt>car</tt> function.
+<pre>
+    <b>=&gt; (car (cdr (cdr color)))</b>
+    63</pre>
+This is very unconvenient to write. Therefore there have been defined
+abreviations of the form <tt>cadr</tt>, <tt>cddr</tt>, <tt>caddr</tt>,
+etc that concatinate the operations described above. The previous
+expression may therefore much more conveniently be written:
+<pre>
+    <b>=&gt;(caddr color)</b>
+    63</pre>
+For the Script-Fu writer one of the most important uses of the <tt>car</tt>
+function is to access the returned values from the built-in gimp
+functions. All gimp-functions return a list, and even if the list contains
+only one element it must be accessed by <tt>car</tt>. This is e.g.
+the case for the important functions <tt>gimp-new-image</tt> and
+<tt>gimp-new-layer</tt> used below.
+    
+</blockquote>
+
+
+<: subsection("Local variables (*)") :>
+<blockquote>
+More experienced scheme programmers mostly use local variables
+instead of the global variables described above. This is
+considered better programming practice and this construct should
+be recognized in order to be able to read others ScriptFu
+scripts.<p>
+
+Local variables are declared through the the <tt>let</tt> keyword
+as in the following example:
+<pre>
+    (let* ((a 3)
+           (b 4))
+          ((* a b)))</pre>
+Here <tt>a</tt> and <tt>b</tt> have a local scope and retain
+their values only up to the closing paren matching the one before
+<tt>let*</tt> .
+</blockquote>
+
+<: section("The GIMP PDB") :>
+<blockquote>
+All functionality of GIMP is available through the procedural database
+(PDB). Each procedural database function has a corresponding scheme
+function mapping. E.g.
+<pre>
+   (gimp-image-new 100 150 RGB)</pre>
+produces a new gimp image of type RGB and size 100x150.
+
+<p> All teh functions of the PDB may be accessed through the DB browser
+  that is available from the main menu through
+<b>Xtns&gt;DB BROWSER...</b>. E.g. the DB Browser entry for
+<tt>uni-img</tt>, which we will define in the example below looks like
+this:
+<p>
+
+<center>
+<img src="pdb-uni-entry.png">
+</center>
+<p>
+For the Script-Fu programmer this information shows that <tt>uni-img</tt>
+may be called with three parameters of the types INT32, STRING and
+COLOR. The different types will be explained below.
+</blockquote>
+
+<: section("Registering the script with Script-Fu") :>
+<blockquote>
+After a function has been written it has to be registered with
+script-fu before it can be used. This is done through the
+scheme function <tt>script-fu-register</tt>.
+The registering has following purposes:
+<ol><li> Choose the place of the script in the Script-Fu pulldown menus.
+    <li> Tell script-fu the type of parameters the script takes and
+	 give these parameters default values.
+    <li> Register the script as a command in the PDB.	
+</ol>	
+The last point above actually means that a script is from Gimp's
+viewpoint in no way different from a built-in command or a plugin
+command. As long as a command is registered in the PDB it can be
+called by any script or plugin.<p>
+
+The parameters of </tt>script-fu-register</tt> may be divided into
+two groups. The first group of seven parameters must always be given.
+These are:
+
+<ol>
+  <li> The name of the lisp function.
+  <li> The position of the script in the gimp menus.
+  <li> A help string describing the function of the script.
+  <li> The script author.
+  <li> The script copyright.
+  <li> Script date.
+  <li> List of valid image types for the script. This only has a
+      meaning on scripts operating on images that already exist.
+</ol>
+
+After these seven parameters have been given, follows a list of the
+parameters required by the script. Each parameter is given as a
+group of three items:
+<ol>
+  <li> The type of the parameter. Valid types are
+      <dl compact>
+	<:dtb("SF-COLOR"):>
+	<dd> An RGB color.
+	<:dtb("SF-TOGGLE"):>
+	<dd> A true or false value.
+	<:dtb("SF-IMAGE"):>
+	<dd> 
+	<:dtb("SF-DRAWABLE"):>
+	<dd>
+	<:dtb("SF-VALUE"):>
+	<dd> Any scalar value, string, integer, or floating point.
+      </dl>
+  <li> A label for script-fu to display when querying for the
+      parameter.
+  <li> A default value.
+</ol>
+</blockquote>
+
+<: section("A commented script") :>
+<blockquote>
+The following script <b>uni.scm</b> receives two parameter from the
+user, the size of the image, and a color and goes on to produce a
+uniform image of the requested size and the requested color. Not very
+useful, but it shows the essential steps in producing a script-fu
+script.
+<p>
+<: code_snippet("uni.scm") :>
+  
+To test the script save it in <tt>$HOME/.gimp-1.2/scripts/uni.scm</tt> and
+then select <tt>Xtns/Script-Fu/Refresh</tt>:
+<center>
+  <img src="refresh.png">
+</center>
+The script <b>Uniform image</b>
+should now appear in the pulldown menu
+<tt>Xtns/Script-Fu/Tutorials/Uniform image</tt>. Selecting this
+script results in the following popup:<p>
+<center>
+<img src="uni-img.png">
+</center>
+<p>
+Accepting these default parameters through the <b>OK</b> button gives
+us the following new image:<p>
+<center>
+<img src="uni-result.png">
+</center>
+<P>
+It is also possible to access this script through the Script-Fu
+console by typing the command
+<pre>
+   (uni-img 100 '(0 255 127))
+</pre>
+
+</blockquote>
+
+<: subsection("Hanging a script in the image menu") :>
+<blockquote>
+In the <b>uni-img</b> script it was placed under <b>Xtns/...</b> in
+the main Gimp window. This is done to create a new image that is
+independant of earlier images. It is also possible to create a script which
+works on an already existing image. If in <b>script-fu-register</b> as
+the second argument is written:
+<pre>    &lt;Image&gt;/Script-Fu/...</pre>
+then the script will be available through the gimp menu that is
+launched by the right mouse button over an image. Such script must also
+have as their first and second argument a SF-IMAGE and a SF-DRAWABLE.
+<p>
+Here is an example script which copies the current layer to a new
+layer, blurs it and inverts it.
+<p>
+  <: code_snippet("copy-blur.scm") :>
+</blockquote>
+
+<: section("Painting areas with selections") :>
+<blockquote>
+In <tt>uni-img</tt> we called the procedure <tt>gimp-edit-fill</tt>
+to fill the whole image. Looking at the info for
+<tt>gimp-edit-fill</tt> in the DB browser we find the following:
+<: pdb("gimp-edit-fill", "Fill selected area of drawable",
+       [["drawable", "DRAWABLE", "The drawable to fill from"],
+        ["fill_type", "INT32", "The type of fill: FG_IMAGE_FILL (0), BG_IMAGE_FILL (1), WHITE_IMAGE_FILL (2), TRANS_IMAGE_FILL (3), NO_IMAGE_FILL (4)"]
+       ],
+       "",
+       "This procedure fills the specified drawable with the fill mode. If the fill mode is foreground, the current foreground color is used. If the fill mode is background, the current background color is used. Other fill modes should not be used. This procedure only affects regions within a selection if there is a selection active."
+       ) :>
+
+Thus, if we have a selection active when the <tt>gimp-edit-fill</tt>
+is called only the selection is painted. There are lots of ways of
+choosing a selection as can be seen when searching for a ``select''
+in the PDB. We will use <tt>gimp-rect-select</tt>, whose entry
+in the PDB looks as follows:
+<: pdb("gimp-rect-select",
+       "Create a rectangular selection over the specified image",
+       [ ["image", "IMAGE", "The image"],
+         ["x", "FLOAT", "x coordinate of upper-left corner of rectangle"],
+         ["y", "FLOAT", "y coordinate of upper-left corner of rectangle"],
+         ["width", "FLOAT", "the width of the rectangle: width \> 0"],
+         ["height", "FLOAT", "the height of the rectangle: width \> 0"],
+         ["operation", "INT32", "the selection operation: {ADD (0), SUB"
+          . "(1), REPLACE (2), INTERSECT (3) }"],
+         ["feather", "INT32", "feather option for selections"],
+         ["feather_radius", "FLOAT", "radius for feather operation"] 
+],
+       "",
+       "This tool creates a rectangular selection over the specified image. The rectangular region can be either added to, subtracted from, or replace the contents of the previous selection mask. If the feather option is enabled, the resulting selection is blurred before combining. The blur is a gaussian blur with the specified feather radius."
+) :>
+
+A simple use of this function which selects the rectangle
+<tt><nobr>(x,y,width,height)=(0,25,100,50)</nobr></tt>, paints this
+region blue, and releases the selection looks as follows:
+
+<pre>
+    (gimp-rect-select img 0 25 100 50 REPLACE 0 0)
+    (gimp-palette-set-background '(0 0 255))
+    (gimp-edit-fill layer BG-IMAGE-FILL)
+    (gimp-selection-none img)
+</pre>
+</blockquote>
+
+<: section("Loops") :>
+<blockquote>
+The only looping construct that exists in Script-Fu is 
+<tt>while</tt>
+<p>[Note: this constraint is due to the current scheme interpreter SIOD
+used for Script-Fu. Once the scheme interpreter as planned is changed
+to Guile, more looping constructs will probably be added.]
+The while loop looks as follows:
+<pre>
+    (while (<I>condition</i>)
+           (<i>statement1</i>)
+           (<i>statement2</i>)
+           :
+           )</pre>
+Here's an example which draws horizontal lines, 16 pixels high,
+on an image:
+<pre>
+    (set! y 0)
+    (while (&lt; y size)
+	   (gimp-rect-select img 0 y size 16 REPLACE 0 0)
+  	   (gimp-edit-fill layer-one BG-IMAGE-FILL)
+	   (set! y (+ y 32)))
+</pre>
+          
+</blockquote>
+
+<: section("Floating selections") :>
+<blockquote>
+When pasting an image from the clipboard, or when creating text in a
+a drawable, the result is not put directly in the drawable. Instead it
+is put into a special temporary layer known as a floating selection.
+The floating selection may be manipulated in several ways, and finally
+it is merged into its associated layer, a process known as <i>anchoring</i>.
+</blockquote>
+
+<: subsection("Hello World - writing text in an image") :>
+<blockquote>
+When creating text through the <tt>gimp-text</tt> command, the text
+is always put into a temporary layer. This temporary layer then has to
+be anchored.
+    
+Here is an example of creating some text which is pasted into the
+current drawable:
+<p>
+  <: code_snippet("hello-world.scm") :>
+
+This script shows another feature we haven't mentioned before. The
+possibility of creating an <i>undo group</i>. All the commands between
+the commands <tt>gimp-undo-push-group-begin</tt> and
+<tt>gimp-undo-push-group-end</tt> are undone together if the undo
+command is issued.
+</blockquote>
+
+<: subsection("Copying a selection") :>
+<blockquote>
+To copy a selection, the command <tt>gimp-edit-copy</tt> is used. It
+places a copy of the selection contents in the cut-buffer. The contents
+of the cut-buffer may then be pasted into a layer, the same layer or
+another one, and it is then pasted as a floating layer. <p>
+
+In the following example the selection is copied, pasted into the same
+layer, offset a fixed distance, finally anchored. Try it by drawing a
+small blob in the middle of the image, select the blob, and then call
+this script.<p>
+
+<: code_snippet("sel-copy.scm") :>
+  
+</blockquote>
+
+<: section("Links and references") :>
+<blockquote>
+  <UL>
+    <LI> <A HREF="http://lehmann.home.ml.org/gimp.html">Marc Lehmanns Gimp page</A> </LI>
+    
+    <LI> <A HREF="http://imagic.weizmann.ac.il/~dov/gimp/perl-tut.html">A perl tutorial</A> </LI>
+    
+    <LI> <a href="http://www.gimp.org">The Gimp home page</a> </LI>
+  </UL>
+</blockquote>  
+
+<hr>
+<address>Please send your comments to <a href="mailto:dov.grobgeld@gmail.com">dov.grobgeld@gmail.com</a></address>
+</body> </html>

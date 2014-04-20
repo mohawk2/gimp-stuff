@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+  <HEAD>
+    <TITLE>gimp-img-map (17-May-1998)</TITLE>
+    <!-- Created by: Dov Grobgeld, 17-May-1998 -->
+    <!-- Changed by: Dov Grobgeld, 17-May-1998 -->
+
+    <link rel="stylesheet" href="../../../dov-colors.css" type="text/css" />
+  </HEAD>
+  <BODY bgcolor=white>
+<h1 align=center>make-img-map<br><font size=-1>Dov Grobgeld 1998
+ <br><a href="http://github.com/dov/gimp-stuff">http://github.com/dov/gimp-stuff</a></font></h1>
+<h3> Make an image map from a list of images</h3>
+<h2>SYNTAX</h2>
+<pre>
+    gimp-make-img-map [-max_height mh] [-htmlindex hi] [-layoutwidth lw]
+	         [-flatten] [-bgcolor clr] [-bgpattern ptn] list
+</pre>
+<h2>DESCRIPTION</h2><blockquote>
+    gimp-make-img-map communicates with Gimp through the Perl Net-Server
+    and automizes the process of combining a list of images into an
+    image map for use e.g. within a HTML page.
+</blockquote>
+<h2>OPTIONS</h2>
+<blockquote>
+<table>
+<tr><th align=left>-max_height mh<td>Set max height of images. (Default 64)
+<tr><th align=left valign=top>-index if<td>Create an index file mapping filename to bounding box	             coordinates in output image, where if is the name of		     the index file. The index file may e.g. be translated by		     a subsequent program into a html index file. 
+<tr><th align=left>-layoutwidth lw<td>Set total width of layout. (Default 600)
+<tr><th align=left>-flatten<td>Flatten the final image.
+<tr><th align=left>-bgcolor<td>Set bg color.
+<tr><th align=left>-bgpattern<td>Set bg pattern. Overrides the bgcolor.
+<tr><th align=left>-padx px<td>Extra space around all images in x-direction. (Default 20)
+<tr><th align=left>-pady py<td>Extra space around all images in y-direction. (Default 20)
+<tr><th align=left>-gutterx gx<td>Space between images in x-direction. (Default 15) 
+<tr><th align=left>-gutterx gy<td>Space between images in y-direction. (Default 15) 
+<tr><th align=left>-darkcomp<td>   Compensate for darkening when bumpmapping.
+<tr><th align=left valign=top>-decoration alg
+ <td>Choose algorithm for drawing the decoration in the layout.
+   Known algorithms are:
+	<UL compact>
+	  <LI> drop-shadow </LI>
+	  
+	  <LI> sunken-windows </LI>
+	</UL>
+</table>
+</blockquote>
+<h2>EXAMPLES</h2>
+  <OL>
+    <LI>Given a text file <tt>myimg.list</tt> containing the names of
+        four images of arbitrary sizes:
+  <table border><tr><td bgcolor=#ffe0e0>
+     <pre>
+ red.png                               
+ green.png
+ blue.jpg
+ pink.jpg</pre>
+  </table>
+  <pre>
+  gimp-make-img-map -bgcolor #440000 -layoutwidth 400 myimg.list</pre>
+  creates the image:
+  <center>
+    <img src="ex1.jpg">
+  </center><p>
+  <li>The following is a different set of parameters:
+    <pre>
+   gimp-make-img-map -index myindex.list -max_height 50 -bgpattern Wood \
+       -decoration sunken-windows -darkcomp -layoutwidth 200 myimg.list      
+</pre>
+  creates the image:
+  <center>
+    <img src="ex2.jpg">
+  </center>
+</LI>
+</OL>
+<H2>The list file</H2>
+<blockquote>
+  If the option <b>-index index.idx</b> is given then the
+  following info is written to the file <tt>index.idx</tt>:
+  <table border><tr><td bgcolor=#ffe0e0>
+     <pre>
+  red.png 22 20 178 70 
+  green.png 55 85 105 135 
+  blue.png 120 85 145 135 
+  pink.png 62 150 138 200</pre>
+  </table>
+  This info can easily be converted into a html image map with a script
+  similar to the following:
+  <table border><tr><td bgcolor=#ffe0e0>
+     <pre>
+  #!/usr/local/bin/perl
+  my $map = q(&lt;map name="mymap"&gt;);
+
+  my $idx = 0;
+  while(<>) {
+     ($img, $x0, $y0, $x1, $y1) = split;
+     $map .= "&lt;area shape=\"rect\" coords=\"$x0,$y0,$x1,$y1\" ".
+             "href=\"img$idx.html\"&gt;\n";
+     $idx++;
+  }
+  $map .= "&lt;/map&gt;";
+  print "$map";
+  print "&lt;img src=\"index.jpg\" usemap=\"#mymap\&gt;\n";
+</pre>
+  </table>
+  
+</blockquote>
+
+<h2>Comments</h2>
+<blockquote>
+  I will be happy to receive ideas about additional layout algorithms
+  and decorations that may be added to gimp-make-img-map.
+</blockquote>
+<hr>
+<address>
+  <a href="dov.grobgeld@gmail.com">Dov Grobgeld &lt;dov.grobgeld@gmail.com&gt;</a>
+</address>
+  </BODY>
+</HTML>

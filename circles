@@ -1,0 +1,51 @@
+#!/usr/local/bin/perl
+
+use Gimp ":auto";
+use Gimp::Fu;
+
+sub circles {
+    my ($size, $bgcolor, $radius) = @_;
+   
+    # Create the background
+    $img = gimp_image_new($size, $size, RGB);
+    $layer = gimp_layer_new($img, $size, $size, RGB,
+                            "Layer 1", 100, NORMAL_MODE);
+    gimp_image_add_layer($layer, -1);
+    gimp_palette_set_background($bgcolor);
+    gimp_edit_fill($layer, BACKGROUND_FILL);
+
+    my $ncircles = int($size/$radius/2);
+    
+    for ($i=0; $i<$ncircles; $i++) {
+        for ($j=0; $j<$ncircles; $j++) {
+            # Be creative and mix colors
+            $color = [$i*30, ($ncircles-$j)*25, ($i+$j)*15];
+
+            # Select a circle
+            gimp_ellipse_select($img,
+                                $i*$radius*2, $j*$radius*2,
+                                $radius*2, $radius*2,
+                                CHANNEL_OP_REPLACE, 1, 0, 0);
+
+            # Paint the color in the circle
+            gimp_palette_set_background($color);
+            gimp_edit_fill($layer, BACKGROUND_FILL);
+            gimp_selection_none($img);
+        }
+    }
+
+    return $img;
+}
+
+# register the script
+register "circles", "a loop", "a loop", "Dov", "Dov", "1999-05-14",
+    "<Toolbox>/Xtns/Perl-Fu/Tutorial/Circles", 
+    "*",
+    [
+     [PF_INT32, "size", "Img size", 100],
+     [PF_COLOR, "bg", "Background color", [40,180,60]],
+     [PF_INT32, "radius", "Circle radius", 10]
+    ],
+    \&circles;
+
+exit main();

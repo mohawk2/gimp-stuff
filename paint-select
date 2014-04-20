@@ -1,0 +1,34 @@
+#!/usr/local/bin/perl -w
+
+use Gimp ":auto";
+use Gimp::Fu;
+
+register
+    "img_paint_select",
+    "Paints the selection", "Paints the selection",
+    "Dov Grobgeld", "Dov Grobgeld", "1999-05-14", 
+    "<Image>/Perl-Fu/Tutorial/Paint Select", 
+    "*", 
+    [
+     [PF_COLOR, "color", "Rectangle color", [0,0,255]] ],
+    sub {
+        my($img, $layer, $color) = @_;
+        my($width, $height) = (gimp_image_width($img),
+                               gimp_image_height($img));
+
+        # Select a rectangle inside the image and paint it with color
+        gimp_image_undo_group_start($img);
+        gimp_rect_select($img,
+                         $width/4, $height/4, $width/2, $height/2,
+                         CHANNEL_OP_REPLACE, 0,0);
+        gimp_palette_set_background($color);
+        gimp_edit_fill($layer, BACKGROUND_FILL);
+        gimp_selection_none($img);
+        gimp_displays_flush();
+        gimp_image_undo_group_end($img);
+
+	# Tell gimp not to display a new image
+	return ();
+    };
+
+exit main();
