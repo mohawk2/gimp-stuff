@@ -12,6 +12,7 @@ podregister {
   $img->insert_layer($layer, -1, 0); # add the layer to the image
   Gimp::Context->set_background($color); # Set background to required color
   $layer->edit_fill(BACKGROUND_FILL); # Paint the layer 
+  Gimp::Display->new($img);
   return $img; # Return image - return implied by no IMAGE TYPES
 };
 
