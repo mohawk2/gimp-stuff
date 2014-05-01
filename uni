@@ -1,44 +1,48 @@
 #!/usr/bin/perl -w
 
-use Gimp ":auto";
+use strict;
+use Gimp;
 use Gimp::Fu;
 
-sub img_uni {
-    my ($size, $color) = @_;
-    
-    # Create a new image
-    $img = gimp_image_new($size, $size, RGB);
+podregister {
+  # no need to have my ($size, $color) = @_;
+  my $img = Gimp::Image->new($size, $size, RGB); # Create a new image
+  # Create a new layer
+  my $layer = $img->layer_new($size, $size, RGB, "Layer 1", 100, NORMAL_MODE);
+  $img->insert_layer($layer, -1, 0); # add the layer to the image
+  Gimp::Context->set_background($color); # Set background to required color
+  $layer->edit_fill(BACKGROUND_FILL); # Paint the layer 
+  return $img; # Return image - return implied by no IMAGE TYPES
+};
 
-    # Create a new layer
-    $layer = gimp_layer_new($img, $size, $size, RGB,
-			    "Layer 1", 100, NORMAL_MODE);
+exit main;
+__END__
 
-    # add the layer to the image
-    gimp_image_add_layer($img, $layer, -1);
+=head1 NAME
 
-    # Set the background to the required color
-    gimp_palette_set_background($color);
+img_uni - Create a uniform image
 
-    # Paint the layer 
-    gimp_edit_fill($layer, BACKGROUND_FILL);
+=head1 SYNOPSIS
 
-    # Return the image
-    return $img;
-}
+<Image>/File/Create/Tutorial/Img Uni
 
-register
-    "img_uni",                 # fill in name
-    "Create a uniform image",  # a small description
-    "A tutorial script",       # a help text
-    "Dov Grobgeld",            # Your name
-    "Dov Grobgeld (c)",        # Your copyright
-    "2004-03-27",              # Date
-    "<Toolbox>/Xtns/Perl-Fu/Tutorial/Img Uni",   # menu path
-    "*",                       # Image types
-    [
-     [PF_INT,   "size", "Img size", 100],
-     [PF_COLOR, "color", "Img color", [255,127,0]]
-    ],
-    \&img_uni;
+=head1 DESCRIPTION
 
-exit main();
+A tutorial script.
+
+=head1 PARAMETERS
+
+ [PF_INT32,   "size", "Img size", 100],
+ [PF_COLOR, "color", "Img color", [255,127,0]]
+
+=head1 AUTHOR
+
+Dov Grobgeld
+
+=head1 DATE
+
+2004-03-27
+
+=head1 LICENSE
+
+Dov Grobgeld (c)

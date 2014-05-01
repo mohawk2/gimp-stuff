@@ -1,9 +1,33 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
-use Gimp ":auto";
+use Gimp;
 use Gimp::Fu;
 
-# Register extension to gimp
-register ... ;
-    
-exit main();  # Handle over control to gimp
+podregister { die "I DIED\n" };
+
+exit main;
+__END__
+
+=head1 NAME
+
+test_exception - exercise gimp-perl filter testing exceptions
+
+=head1 SYNOPSIS
+
+<Image>/Filters/Languages/_Perl/_Test/Exception
+
+=head1 DESCRIPTION
+
+Exercise Gimp-Perl exceptions.
+
+=head1 AUTHOR
+
+The Author.
+
+=head1 DATE
+
+20140310
+
+=head1 LICENSE
+
+The licensing terms.
