@@ -7,4 +7,5 @@
 
 # Commentary
 
-This repository contains the sources for various gimp tutorials and scripts that I wrote in the past.
+This repository contains the sources for various gimp tutorials and
+scripts that Dov wrote in the past, updated to Gimp-Perl 2.3.
