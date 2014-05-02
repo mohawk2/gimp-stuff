@@ -1,46 +1,52 @@
 #!/usr/bin/perl
 
-use Gimp ":auto";
+use Gimp;
 use Gimp::Fu;
 
-sub text1 {
-    my($font, $text) = @_;
-    
-    # Create a new image
-    $img = gimp_image_new(350, 100, RGB);
+podregister {
+  my $img = Gimp::Image->new(350, 100, RGB);
+  my $drw = $img->layer_new($img->width, $img->height,
+			RGB, "BG", 100, NORMAL_MODE);
+  $img->insert_layer($drw, -1, 0);
+  Gimp::Context->set_background("black");
+  $drw->edit_fill(BACKGROUND_FILL);
+  Gimp::Context->set_foreground([255,255,0]); # Choose color of text
+  # Create the text
+  my $textlayer = $drw->text_fontname(0, 0, $text, 10, 1, $size, POINTS, $font);
+  $textlayer->floating_sel_anchor;
+  Gimp::Display->new($img);
+  return $img;
+};
 
-    # Create a new layer and draw it to the image at the top
-    $drw = gimp_layer_new($img, $img->width, $img->height,
-			  RGB, "BG", 100, NORMAL_MODE);
-    $drw->add_layer(-1);
-    gimp_palette_set_background("black");
-    gimp_edit_fill($drw, BACKGROUND_FILL);
+exit main;
+__END__
 
+=head1 NAME
 
-    # Choose color of text
-    gimp_palette_set_foreground([255,255,0]);
+hello_world1 - basic text
 
-    # Create the text
-    my $border = 10;
-    my ($size) = ($font=~ /(\d+)/);  # Extract size from font name
-    my $text_layer = gimp_text_fontname($drw,  0, 0, $text,
-					$border, 1, 
-					$size, POINTS, $font);
-    gimp_floating_sel_anchor($text_layer);
-    
-    return $img;
-}
+=head1 SYNOPSIS
 
-# register the script
-register "hello_world1", "basic text", "basic text", "Dov", "Dov",
-    "2004-03-27",
-    "<Toolbox>/Xtns/Perl-Fu/Tutorial/Basic text 1", 
-    "*",
-    [
-     [PF_FONT, "font", "font", "Sans 70"],
-     [PF_STRING, "text", "text", "Hello world!"]
-    ],
-    \&text1;
+<Image>/File/Create/Tutorial/Basic text 1
 
-# Handle over control to gimp
-exit main();
+=head1 DESCRIPTION
+
+basic text
+
+=head1 PARAMETERS
+
+ [PF_FONT, "font", "Font", "Sans"],
+ [PF_INT32, "size", "Font size", 70],
+ [PF_STRING, "text", "Text", "Hello world!"]
+
+=head1 AUTHOR
+
+Dov
+
+=head1 DATE
+
+2004-03-27
+
+=head1 LICENSE
+
+Dov

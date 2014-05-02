@@ -472,11 +472,12 @@ Choosing the default values results in the image:
   </table>
   <p>
   The substitution rule for converting a PDB turning into a method is
-  as simple as erasing ``<tt>gimp_image_</tt>'' from the beginning
-  of the function call and calling this method through the image object.
-  Similarly for the <tt>gimp_drawable_...</tt> functions. See the <a
+  as simple as erasing ``<tt>gimp_image_</tt>'' (or sometimes
+  ``<tt>gimp_</tt>'') from the beginning of the function call and
+  calling this method through the image object.  Similarly for the
+  <tt>gimp_drawable_...</tt> functions. See the <a
   href="http://search.cpan.org/dist/Gimp/Gimp.pm#OBJECT-ORIENTED_SYNTAX">Gimp-Perl
-  docs</a> for more detail<p>
+  docs</a> for more detail.<p>
 
   Note that the object oriented syntax is only syntactic sugar that
   makes the calling syntax cleaner. The error messages are still given
@@ -542,25 +543,26 @@ The result when run on our previous image:
 
 <: subsection("Complex selections") :>
   Besides rectangular selections elliptical selections may also be
-  created through the PDB functions <tt>gimp_ellipse_select()</tt>
-  and <tt>gimp_free_select()</tt> which allows the selection of
+  created through the PDB functions <tt>gimp_image_select_ellipse</tt>
+  and <tt>gimp_image_select_polygon</tt> which allows the selection of
   ellipses and polygons.
   <p>
   More complex selections may be created through the channel mechanism.
-  The PDB <tt>gimp_channel_new()</tt> creates a new channel. The channel
-  is a drawable that may be painted into, just like any other drawable,
-  but with the difference that it is always a grey level image. Once
-  the channel is finished, the channel may be loaded into the selection 
-  through the PDB function <tt>gimp_selection_load()</tt>.
+  The PDB <tt>gimp_channel_new()</tt> (<tt>Gimp::Channel-&gt;new</tt>)
+  creates a new channel. The channel is a drawable that may be painted
+  into, just like any other drawable, but with the difference that
+  it is always a grey level image. Once the channel is finished, the
+  channel may be loaded into the selection through the PDB function
+  <tt>gimp_image_select_item</tt>.
   <p>
     Search for ``select'' in the DB Browser to see a list of all the
     selection related functions.
 
 <: subsection("Loops") :>
 In perl it is trivial to write loops that together with the various
-selecton tools gives powerful creative possibilities. Here is
+selection tools gives powerful creative possibilities. Here is
 an example that mixes colors in circles. There is nothing really new
-here, but it shows the power of the what we have described above.
+here, but it shows the power of what we have described above.
 <: code_snippet("circles") :>
 The result:
 <center>
@@ -571,8 +573,7 @@ The result:
 
 <: subsection("Hello World - writing text in an image") :>
 
-To create text the PDB function <tt>gimp_text_fontname()</tt> may be
-used. In this function the font is specified in the X11 font conventions.
+To create text the PDB function <tt>gimp_text_fontname()</tt> may be used.
 
 <p> Here is an example of a script that creates an image containing
 "Hello world".
@@ -582,25 +583,20 @@ The result:
 <center>
 <img src="hello-world1.png">
 </center>
-The script makes uses a simple regular expression to extract the
-font size from the font name. This is necessary as the authors
-of <tt>gimp_text_fontname</tt> decided that the font size within the fontname
-is ignored.
-<p>
 One thing to note in this script is that the text that is created on
-line 24 is a <i>floating layer</i>, than needs to be anchored to its
-parent layer. This is done in line 27 through the call to
+line 15 is a <i>floating layer</i>, that needs to be anchored to its
+parent layer. This is done in line 16 through the call to
 <tt>gimp_floating_sel_anchor()</tt>.<p>
 
 This script suffers from the problem that the image size is unrelated
 to the text size. This is taken care of in the following more
 complex example which shows the basic steps for a logo generating
-script. 
+script:
 <UL>
-  <LI> Creation of an image arbitrary size </LI>
+  <LI> Creation of an image of arbitrary size </LI>
   <LI> Creation of a background drawable of an arbitrary size </LI>
   <LI> Creation of text layer which exactly fits the text with the command
-       <tt>gimp_text_fontname()</tt>.
+       <tt>gimp_text_fontname</tt>.
   <LI> Resizing the image and the background to the size of the text layer. </LI>
 </UL>
 The result is an image composed of two layers; a transparent text layer
@@ -609,18 +605,13 @@ on top of a uniform background.
 
 <: code_snippet("basic-logo") :>
   <p>
-  Note the special syntax of <tt>gimp_image_text_fontname()</tt>
-  in line 24 in <tt>basic-logo</tt> with an image specified for a
-  first parameter, and the drawable = -1. This is in contradiction
-  to the rule above that the image should not be specified for 
-  PDB functions that take both an image and a drawable as the first
-  two parameters. But since
-  the drawable=-1, which has no image related to it, an image explicitely
-  be provided. The special case drawable=-1 means that instead of
-  creating a floating layer, a new image layer will be created.
+  Note the special syntax of <tt>gimp_image_text_fontname</tt>
+  in line 14 in <tt>basic-logo</tt> with the drawable = -1. The special
+  case drawable=-1 means that instead of creating a floating layer,
+  a new image layer will be created.
 
   <p>
-    The result shown in the following dialog and the resulting image:
+    The dialog and the resulting image:
     <p>
 <center>
 <img src="basic-logo-dialog.png"><img src="tpix.gif" width=20>
@@ -716,7 +707,7 @@ on top of a uniform background.
          through the Perl Data Language (PDL) module.</LI>
     <LI> Using Perl::Gimp in a CGI environment. </LI>
     <LI> How to fill with gradients in a plugin </LI>
-    <LI> How to do "free selections". </LI>
+    <LI> How to do polygon selections. </LI>
   </UL>
 
   <p>Additionally, the Gimp-Perl distribution also has over 50 example
