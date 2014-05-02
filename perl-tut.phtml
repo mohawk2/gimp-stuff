@@ -142,9 +142,9 @@ be accessed through scripting. Available scripting environments include
 Scheme through Script-Fu, and Python. Scheme can be a little difficult
 to use if one does not already know the language.
 <p>
-Perl as a language is probably more familiar to web-literate users,
-as it is the major language for writing CGI scripts. Now, 
-GIMP scripts may also be written with Perl. This tutorial will describe
+Perl as a language is far more capable than Scheme, and also has CPAN, giving access to vast numbers of modules to get things done.
+Now, 
+GIMP may also be scripted in Perl. This tutorial will describe
 how to write such plug-ins and scripts for Gimp.<p>
 
 As there are several excellent tutorial texts describing the perl
@@ -458,27 +458,29 @@ Choosing the default values results in the image:
 </center>
 
 <: section("Object oriented syntax") :>
-  Gimp::Fu provides an alternative object-oriented syntax for the
+  Gimp-Perl provides an alternative object-oriented syntax for the
   image and the drawable commands. Here is a table showing the procedural
   vs the object oriented syntax for a few commands:<p>
 
   <table>
     <tr><th bgcolor=#E0E0E0>procedural syntax
 	<th bgcolor=#E0E0E0>object oriented syntax
-    <tr><td bgcolor=#FFE0E0>gimp_image_add_layer($drw,-1);
-        <td bgcolor=#FFE0E0>$img->add_layer($drw, -1);
+    <tr><td bgcolor=#FFE0E0>gimp_image_insert_layer($drw,0,0);
+        <td bgcolor=#FFE0E0>$img-&gt;insert_layer($drw,0,0);
     <tr><td bgcolor=#FFE0E0>gimp_drawable_width($drw);
-        <td bgcolor=#FFE0E0>$drw->width();
+        <td bgcolor=#FFE0E0>$drw-&gt;width;
   </table>
   <p>
   The substitution rule for converting a PDB turning into a method is
   as simple as erasing ``<tt>gimp_image_</tt>'' from the beginning
   of the function call and calling this method through the image object.
-  Similarly for the <tt>gimp_drawable_...</tt> functions.<p>
+  Similarly for the <tt>gimp_drawable_...</tt> functions. See the <a
+  href="http://search.cpan.org/dist/Gimp/Gimp.pm#OBJECT-ORIENTED_SYNTAX">Gimp-Perl
+  docs</a> for more detail<p>
 
   Note that the object oriented syntax is only syntactic sugar that
-  makes the calling syntax cleaner in some cases. The error messages
-  are still given in the procedural format.
+  makes the calling syntax cleaner. The error messages are still given
+  in the procedural format.
 
 <: section("Painting areas with selections") :>
 In the <tt>uni</tt> script the function <tt>gimp_edit_fill</tt> was called
@@ -486,36 +488,32 @@ to fill the whole image. Looking at the info for
 <tt>gimp_edit_fill</tt> in the DB browser we find the following:
 <: pdb("gimp_edit_fill", "Fill selected area of drawable",
        [["drawable", "DRAWABLE", "The drawable to fill from"],
-	["fill_type", "INT32", "The type of fill: GIMP_FOREGROUND_FILL (0), GIMP_BACKGROUND_FILL (1), GIMP_WHITE_FILL (2), GIMP_TRANSPARENT_FILL (3), GIMP_PATTERN_FILL (4)"]
+	["fill_type", "INT32", "The type of fill { FOREGROUND-FILL (0), BACKGROUND-FILL (1), WHITE-FILL (2), TRANSPARENT-FILL (3), PATTERN-FILL (4), NO-FILL (5) }"]
 ],
        "",
-       "This procedure fills the specified drawable with the fill mode. If the fill mode is foreground, the current foreground color is used. If the fill mode is background, the current background color is used. Other fill modes should not be used. This procedure only affects regions within a selection if there is a selection active."
+       "This procedure fills the specified drawable with the fill mode. If the fill mode is foreground, the current foreground color is used. If the fill mode is background, the current background color is used. Other fill modes should not be used. This procedure only affects regions within a selection if there is a selection active. If you want to fill the whole drawable, regardless of the selection, use 'gimp-drawable-fill'."
 
 ) :>
 
 <p>
 Thus, if a selection is active when <tt>gimp_edit_fill</tt>
-is called only the selection is painted. Note also that you should
-erase the "GIMP_" part of the constant names.
+is called, only the selection is painted. Note also that you must
+substitute "_" for "-" in the names.
 
-<p>There are lots of ways of
-choosing a selection as can be seen when searching for a ``select''
-in the PDB. The example below uses <tt>gimp_rect_select</tt>,
-whose entry in the PDB looks as follows:
-<: pdb("gimp_rect_select",
+<p>There are lots of ways of choosing a selection as can be seen
+when searching for a ``select'' in the PDB. The example below uses
+<tt>gimp_image_select_rectangle</tt>, whose entry in the PDB looks as follows:
+<: pdb("gimp-image-select-rectangle",
        "Create a rectangular selection over the specified image",
        [ ["image", "IMAGE", "The image"],
+         ["operation", "INT32", "The selection operation { CHANNEL-OP-ADD (0), CHANNEL-OP-SUBTRACT (1), CHANNEL-OP-REPLACE (2), CHANNEL-OP-INTERSECT (3) }"],
          ["x", "FLOAT", "x coordinate of upper-left corner of rectangle"],
          ["y", "FLOAT", "y coordinate of upper-left corner of rectangle"],
-         ["width", "FLOAT", "the width of the rectangle: width \> 0"],
-         ["height", "FLOAT", "the height of the rectangle: width \> 0"],
-         ["operation", "INT32", "the selection operation: {GIMP_CHANNEL_OP_ADD (0), GIMP_CHANNEL_OP_SUB"
-          . "(1), GIMP_CHANNEL_OP_REPLACE (2), GIMP_CHANNEL_OP_INTERSECT (3) }"],
-         ["feather", "INT32", "feather option for selections"],
-         ["feather_radius", "FLOAT", "radius for feather operation"] 
+         ["width", "FLOAT", "the width of the rectangle: width \>= 0"],
+         ["height", "FLOAT", "the height of the rectangle: width \>= 0"],
 ],
        "",
-       "This tool creates a rectangular selection over the specified image. The rectangular region can be either added to, subtracted from, or replace the contents of the previous selection mask. If the feather option is enabled, the resulting selection is blurred before combining. The blur is a gaussian blur with the specified feather radius."       
+       "This tool creates a rectangular selection over the specified image. The rectangular region can be either added to, subtracted from, or replace the contents of the previous selection mask. This procedure is affected by the following context setters: 'gimp-context-set-feather', 'gimp-context-set-feather-radius'."       
 ) :>
 
 A simple use of this function which selects a rectangle in the middle
@@ -525,21 +523,14 @@ before:
 <UL>
   <LI> The script is associated with an image since its menu
        path starts with "&lt;Image&gt;/...". Note that as a result of this
-       the callback sub in line 13 receives two additional
-       parameters, the active image and the seleced drawable.</LI>
-  <LI> The use of a subroutine without a name as a parameter to
-       <tt>podregister</tt></LI>
+       the callback sub in line 6 receives two additional
+       parameters, the active image and the selected drawable.</LI>
   
-  <LI> The use of the PDB functions <tt>gimp_undo_push_group_start</tt>
-       and <tt>gimp_undo_push_group_end</tt>. These functions declare
+  <LI> The use of the PDB functions <tt>gimp_image_undo_group_start</tt>
+       and <tt>gimp_image_undo_group_end</tt>. These functions declare
        an undo group. When an undo is done on the image, instead of
        having the individual operators undo, all the actions between
-       the undo start and the undo group calls will be undone at once.</LI>
-  
-  <LI> The return type of the podregister function defines what new
-       images should be displayed by gimp. In this case we don't
-       want to display any new images and therefore return an empty array.
-  </LI>
+       the undo start and the undo end calls will be undone at once.</LI>
 </UL>
 
 <: code_snippet("paint-select") :>
@@ -675,7 +666,9 @@ on top of a uniform background.
 
   The filename for the <tt>--output</tt> has some special magic that
   allows to set some special image saving parameters, like interlace,
-  quality factor, etc. See the Gimp::Fu man page for details.</t>
+  quality factor, etc. See the <a
+  href="http://search.cpan.org/dist/Gimp/Gimp/Fu.pm">Gimp::Fu
+  docs</a> for more detail<p>
 
   Note that the normal rules about image and file types are still valid,
   thus e.g. in order to save an image as a gif file, it must be converted
@@ -725,6 +718,9 @@ on top of a uniform background.
     <LI> How to fill with gradients in a plugin </LI>
     <LI> How to do "free selections". </LI>
   </UL>
+
+  <p>Additionally, the Gimp-Perl distribution also has over 50 example
+  scripts supplied. Take a look through those for further inspiration!
 
 <: section("Links and references") :>
   <UL>

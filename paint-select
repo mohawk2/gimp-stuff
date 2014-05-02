@@ -1,34 +1,55 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
-use Gimp ":auto";
+use Gimp;
 use Gimp::Fu;
 
-register
-    "img_paint_select",
-    "Paints the selection", "Paints the selection",
-    "Dov Grobgeld", "Dov Grobgeld", "1999-05-14", 
-    "<Image>/Perl-Fu/Tutorial/Paint Select", 
-    "*", 
-    [
-     [PF_COLOR, "color", "Rectangle color", [0,0,255]] ],
-    sub {
-        my($img, $layer, $color) = @_;
-        my($width, $height) = (gimp_image_width($img),
-                               gimp_image_height($img));
+podregister {
+  my ($width, $height) = ($image->width, $image->height);
+  # Select a rectangle inside the image and paint it with color
+  $image->undo_group_start;
+  $image->select_rectangle(
+    CHANNEL_OP_REPLACE, $width/4, $height/4, $width/2, $height/2,
+  );
+  Gimp::Context->set_background($color);
+  $drawable->edit_fill(BACKGROUND_FILL);
+  $image->selection_none;
+  $image->undo_group_end;
+  ();
+};
 
-        # Select a rectangle inside the image and paint it with color
-        gimp_image_undo_group_start($img);
-        gimp_rect_select($img,
-                         $width/4, $height/4, $width/2, $height/2,
-                         CHANNEL_OP_REPLACE, 0,0);
-        gimp_palette_set_background($color);
-        gimp_edit_fill($layer, BACKGROUND_FILL);
-        gimp_selection_none($img);
-        gimp_displays_flush();
-        gimp_image_undo_group_end($img);
+exit main;
+__END__
 
-	# Tell gimp not to display a new image
-	return ();
-    };
+=head1 NAME
 
-exit main();
+img_paint_select - Paints the selection
+
+=head1 SYNOPSIS
+
+<Image>/Filters/Tutorial/Paint Select
+
+=head1 DESCRIPTION
+
+Paints the selection
+
+=head1 PARAMETERS
+
+ [PF_COLOR, "color", "Rectangle color", [0,0,255]],
+
+=head1 RETURN VALUES
+
+=head1 IMAGE TYPES
+
+*
+
+=head1 AUTHOR
+
+Dov Grobgeld
+
+=head1 DATE
+
+1999-05-14
+
+=head1 LICENSE
+
+Dov Grobgeld
