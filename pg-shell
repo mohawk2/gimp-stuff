@@ -1,21 +1,17 @@
 #!/usr/bin/perl
-######################################################################
-#  An interactive command line shell to gimp.
-######################################################################
-use Gimp ":auto";
+
+#  An interactive command line shell to GIMP.
+use Gimp;
 use Term::ReadLine;
 
-sub interact {
+Gimp::on_net {
     $term = new Term::ReadLine("Gimp");
     while( defined ($_ = $term->readline("Gimp> "))) {
         $res = eval($_) . "\n";
         print("Error: $@"), next if $@;
         print "\n";
-        gimp_displays_flush();
+        Gimp->displays_flush();
     }
-}
+};
 
-Gimp::on_net(\&interact);
-
-exit main();
-
+exit Gimp::main;

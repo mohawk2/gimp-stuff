@@ -31,7 +31,7 @@
 <li> <a href="#SEC8.1">8.1. Hello World - writing text in an image</a></li>
 <li> <a href="#SEC9">9. Floating selections</a></li>
 <li> <a href="#SEC10">10. The Perl Server and stand-alone scripts</a></li>
-<li> <a href="#SEC10.1">10.1. A shell for gimp-perl</a></li>
+<li> <a href="#SEC10.1">10.1. A shell for Gimp-Perl</a></li>
 <li> <a href="#SEC11">11. End notes</a></li>
 <li> <a href="#SEC12">12. Links and references</a></li>
 </ul>
@@ -482,9 +482,11 @@ Choosing the default values results in the image:
   href="http://search.cpan.org/dist/Gimp/Gimp.pm#OBJECT-ORIENTED_SYNTAX">Gimp-Perl
   docs</a> for more detail.<p>
 
-  Note that the object oriented syntax is only syntactic sugar that
-  makes the calling syntax cleaner. The error messages are still given
-  in the procedural format.
+  Note that the object-oriented syntax appears to be only syntactic
+  sugar that makes the calling syntax cleaner. The error messages are
+  still given in the procedural format. What is going on is that GIMP,
+  and the library on which it is implemented (Glib), use C in an
+  object-oriented fashion.
 
 <h2><a name="SEC7">7. Painting areas with selections</a></h2>
 
@@ -857,15 +859,10 @@ on top of a uniform background.
 <font size=-1 color=red> 62:  </font> 
 <font size=-1 color=red> 63:  </font>Dov Grobgeld </pre></table><br>
   <p>
-  Note the special syntax of <tt>gimp_image_text_fontname()</tt>
-  in line 24 in <tt>basic-logo</tt> with an image specified for a
-  first parameter, and the drawable = -1. This is in contradiction
-  to the rule above that the image should not be specified for 
-  PDB functions that take both an image and a drawable as the first
-  two parameters. But since
-  the drawable=-1, which has no image related to it, an image explicitely
-  be provided. The special case drawable=-1 means that instead of
-  creating a floating layer, a new image layer will be created.
+  Note the special syntax of <tt>gimp_image_text_fontname</tt>
+  in line 14 in <tt>basic-logo</tt> with the drawable = -1. The special
+  case drawable=-1 means that instead of creating a floating layer,
+  a new image layer will be created.
 
   <p>
     The dialog and the resulting image:
@@ -878,7 +875,7 @@ on top of a uniform background.
 
 <h2><a name="SEC9">9. Floating selections</a></h2>
 
-  When a region has been selected through one of the selection routines
+  When a region has been selected through one of the selection routines,
   the area outlined by the selection may be copied to the cut-buffer
   through the <tt>gimp_edit_copy</tt> command. The cut-buffer may
   subsequently be pasted into a different layer through the
@@ -891,149 +888,151 @@ on top of a uniform background.
   the target image before the cut-buffer is pasted. <p>
 
   This is illustrated in the following program, which works on one image
-  and takes as a parameter an another image, which it concatinates to
+  and takes as a parameter another image, which it concatenates to
   the right of the first image. The lines 28-38 shows how the second
   image is copied and glued into the first image.<p>
   <table border><tr><th bgcolor=#E0E0FF><a href="horiz-cat">horiz-cat</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>#!/usr/bin/perl 
 <font size=-1 color=red>  2:  </font> 
-<font size=-1 color=red>  3:  </font>use Gimp qw( :auto ); 
+<font size=-1 color=red>  3:  </font>use Gimp; 
 <font size=-1 color=red>  4:  </font>use Gimp::Fu; 
 <font size=-1 color=red>  5:  </font> 
-<font size=-1 color=red>  6:  </font>sub horiz_cat { 
-<font size=-1 color=red>  7:  </font>    my($img1, $drw1, $drw2) = @_; 
-<font size=-1 color=red>  8:  </font> 
-<font size=-1 color=red>  9:  </font>    # Get image 2 
-<font size=-1 color=red> 10:  </font>    $img1 = $drw1-&gt;get_image(); 
-<font size=-1 color=red> 11:  </font>     
-<font size=-1 color=red> 12:  </font>    my $img2 = $drw2-&gt;get_image(); 
-<font size=-1 color=red> 13:  </font>    my($w1, $h1) = ($drw1-&gt;width, $drw1-&gt;height); 
-<font size=-1 color=red> 14:  </font>    my($w2, $h2) = ($drw2-&gt;width, $drw2-&gt;height); 
-<font size=-1 color=red> 15:  </font> 
-<font size=-1 color=red> 16:  </font>    # The new height is the maximum height of the images 
-<font size=-1 color=red> 17:  </font>    my $hmax = $h1 &gt; $h2 ? $h1 : $h2; 
-<font size=-1 color=red> 18:  </font> 
-<font size=-1 color=red> 19:  </font>    # Create an undo group 
-<font size=-1 color=red> 20:  </font>    $img1-&gt;undo_group_start(); 
-<font size=-1 color=red> 21:  </font>     
-<font size=-1 color=red> 22:  </font>    # Resize the drawable layer to make room for the img 
-<font size=-1 color=red> 23:  </font>    $img1-&gt;resize($w1+$w2, $hmax, 0, ($hmax-$h1)/2); 
-<font size=-1 color=red> 24:  </font>    $drw1-&gt;resize($w1+$w2, $hmax, 0, ($hmax-$h1)/2); 
-<font size=-1 color=red> 25:  </font> 
-<font size=-1 color=red> 26:  </font>    # Copy $drawable2 and paste it into the new space of $drawable1 
-<font size=-1 color=red> 27:  </font>    # select all of img2 
-<font size=-1 color=red> 28:  </font>    $img2-&gt;selection_all(); 
-<font size=-1 color=red> 29:  </font>    $drw2-&gt;edit_copy(); 
-<font size=-1 color=red> 30:  </font>    $img2-&gt;selection_none(); 
-<font size=-1 color=red> 31:  </font> 
-<font size=-1 color=red> 32:  </font>    # make a selection in img 1 where $drw2 is to be pasted 
-<font size=-1 color=red> 33:  </font>    $img1-&gt;rect_select($w1, ($hmax-$h2)/2, $w2, $h2, 0,0,0); 
+<font size=-1 color=red>  6:  </font>podregister { 
+<font size=-1 color=red>  7:  </font>  die "Must select layer.\n" unless $drawable-&gt;is_layer; 
+<font size=-1 color=red>  8:  </font>  $drawable-&gt;become('Gimp::Layer'); 
+<font size=-1 color=red>  9:  </font>  my $image2 = $drawable2-&gt;get_image; 
+<font size=-1 color=red> 10:  </font>  my ($w1, $h1) = ($drawable-&gt;width, $drawable-&gt;height); 
+<font size=-1 color=red> 11:  </font>  my ($w2, $h2) = ($drawable2-&gt;width, $drawable2-&gt;height); 
+<font size=-1 color=red> 12:  </font>  my $hmax = $h1 &gt; $h2 ? $h1 : $h2; # new height is maximum height of the images 
+<font size=-1 color=red> 13:  </font>  $image-&gt;undo_group_start; # Create an undo group 
+<font size=-1 color=red> 14:  </font>  # Resize the drawable layer to make room for the image 
+<font size=-1 color=red> 15:  </font>  $image-&gt;resize($w1+$w2, $hmax, 0, ($hmax-$h1)/2); 
+<font size=-1 color=red> 16:  </font>  $drawable-&gt;resize($w1+$w2, $hmax, 0, ($hmax-$h1)/2); 
+<font size=-1 color=red> 17:  </font>  # Copy $drawable2 and paste it into the new space of $drawable1 
+<font size=-1 color=red> 18:  </font>  $image2-&gt;selection_all; # select all of image2 
+<font size=-1 color=red> 19:  </font>  $drawable2-&gt;edit_copy; 
+<font size=-1 color=red> 20:  </font>  $image2-&gt;selection_none; 
+<font size=-1 color=red> 21:  </font>  # make a selection in image 1 where $drawable2 is to be pasted 
+<font size=-1 color=red> 22:  </font>  $image-&gt;select_rectangle(CHANNEL_OP_ADD, $w1, ($hmax-$h2)/2, $w2, $h2); 
+<font size=-1 color=red> 23:  </font>  $drawable-&gt;edit_paste(0)-&gt;floating_sel_anchor; # paste and then anchor it 
+<font size=-1 color=red> 24:  </font>  $image-&gt;undo_group_end; # Close the undo group 
+<font size=-1 color=red> 25:  </font>  return; 
+<font size=-1 color=red> 26:  </font>}; 
+<font size=-1 color=red> 27:  </font> 
+<font size=-1 color=red> 28:  </font>exit main; 
+<font size=-1 color=red> 29:  </font>__END__ 
+<font size=-1 color=red> 30:  </font> 
+<font size=-1 color=red> 31:  </font>=head1 NAME 
+<font size=-1 color=red> 32:  </font> 
+<font size=-1 color=red> 33:  </font>horiz_cat - Horizontal concat 
 <font size=-1 color=red> 34:  </font> 
-<font size=-1 color=red> 35:  </font>    # paste and then anchor it 
-<font size=-1 color=red> 36:  </font>    my $floating_layer = $drw1-&gt;edit_paste(0); 
-<font size=-1 color=red> 37:  </font>    $floating_layer-&gt;floating_sel_anchor(); 
+<font size=-1 color=red> 35:  </font>=head1 SYNOPSIS 
+<font size=-1 color=red> 36:  </font> 
+<font size=-1 color=red> 37:  </font>&lt;Image&gt;/Filters/Tutorial/Horizontal Concat 
 <font size=-1 color=red> 38:  </font> 
-<font size=-1 color=red> 39:  </font>    # Close the undo group 
-<font size=-1 color=red> 40:  </font>    $img1-&gt;undo_group_end(); 
-<font size=-1 color=red> 41:  </font>     
-<font size=-1 color=red> 42:  </font>    # Update the display 
-<font size=-1 color=red> 43:  </font>    gimp_displays_flush(); 
-<font size=-1 color=red> 44:  </font>     
-<font size=-1 color=red> 45:  </font>    return undef; 
-<font size=-1 color=red> 46:  </font>} 
-<font size=-1 color=red> 47:  </font> 
-<font size=-1 color=red> 48:  </font># register the script 
-<font size=-1 color=red> 49:  </font>register "horiz_cat", "Horizontal concat", "Horizontal Concat", 
-<font size=-1 color=red> 50:  </font>    "Dov Grobgeld", "Dov Grobgeld", "2004-03-27", 
-<font size=-1 color=red> 51:  </font>    "&lt;Image&gt;/Perl-Fu/Tutorial/Horizontal Concat",  
-<font size=-1 color=red> 52:  </font>    "*", 
-<font size=-1 color=red> 53:  </font>    [[PF_DRAWABLE,   "drawable", "Drawable to concatinate", undef]], 
-<font size=-1 color=red> 54:  </font>    \&amp;horiz_cat; 
-<font size=-1 color=red> 55:  </font> 
-<font size=-1 color=red> 56:  </font>exit main(); </pre></table><br>
+<font size=-1 color=red> 39:  </font>=head1 DESCRIPTION 
+<font size=-1 color=red> 40:  </font> 
+<font size=-1 color=red> 41:  </font>Horizontal concatenation of images. 
+<font size=-1 color=red> 42:  </font> 
+<font size=-1 color=red> 43:  </font>=head1 PARAMETERS 
+<font size=-1 color=red> 44:  </font> 
+<font size=-1 color=red> 45:  </font> [PF_DRAWABLE,   "drawable2", "Drawable to concatenate", undef], 
+<font size=-1 color=red> 46:  </font> 
+<font size=-1 color=red> 47:  </font>=head1 IMAGE TYPES 
+<font size=-1 color=red> 48:  </font> 
+<font size=-1 color=red> 49:  </font>* 
+<font size=-1 color=red> 50:  </font> 
+<font size=-1 color=red> 51:  </font>=head1 AUTHOR 
+<font size=-1 color=red> 52:  </font> 
+<font size=-1 color=red> 53:  </font>Dov Grobgeld 
+<font size=-1 color=red> 54:  </font> 
+<font size=-1 color=red> 55:  </font>=head1 DATE 
+<font size=-1 color=red> 56:  </font> 
+<font size=-1 color=red> 57:  </font>2004-03-27 
+<font size=-1 color=red> 58:  </font> 
+<font size=-1 color=red> 59:  </font>=head1 LICENSE 
+<font size=-1 color=red> 60:  </font> 
+<font size=-1 color=red> 61:  </font>Dov Grobgeld </pre></table><br>
+
+  You might notice something very important on lines 7 and 8: we
+  "know" that we'll always pass a layer as the first drawable,
+  but we're checking that anyway. Then we're telling Gimp-Perl the
+  drawable definitely <i>is</i> a layer. The reason for that is that
+  (obviously) <tt>Gimp::Layer</tt> and <tt>Gimp::Drawable</tt> have
+  different methods available to them, and what matters here is that
+  <tt>Gimp::Drawable</tt> does not have a resize method. (i.e. The PDB
+  does not have a <tt>gimp_drawable_resize</tt> function)
 
 <h2><a name="SEC10">10. The Perl Server and stand-alone scripts</a></h2>
 
   So far the scripts have all been started from the menu structure
-  within menu. But there is another possibility and that is to run
-  the scripts from the command line, as a normal perl program. When
-  run this way the script tries to connect to the Perl-Server, and
-  if it fails it will launch gimp on its own. If you plan to run
-  several scripts this way, it is obviously much faster to run the
-  Perl-Server since launching gimp takes quite a bit of time. The
-  perl-server may be started from the Xtns menu.
+  within GIMP. But using <tt>Gimp::Fu</tt> there is another possibility,
+  and that is to run the scripts from the command line, as a normal
+  Perl program. When run this way the script tries to connect to the
+  Perl-Server, and if it fails it will launch a GIMP of its own. If you
+  plan to run several scripts this way, it is obviously much faster to
+  run the Perl-Server since launching GIMP takes quite a bit of time. The
+  Perl-Server may be started from the <tt>Filters/Perl</tt> menu.
   <p>
 
-  When a perl-fu script is run from the command line, the
+  When a <tt>Gimp::Fu</tt> script is run from the command line, the
   result is the same as when it is run through the menus, except
-  of the fact that it may be run with the <tt>--output</tt> parameter
-  in case it will save the result to a file instead of displaying
-  it within gimp. This is great for batch creation of logos, etc. <p>
+  that it may be run with the <tt>--output</tt> parameter.
+  This will save the result to a file instead of displaying
+  it within GIMP. This is great for batch creation of logos, etc. <p>
 
   The filename for the <tt>--output</tt> has some special magic that
   allows to set some special image saving parameters, like interlace,
   quality factor, etc. See the <a
-  href="http://search.cpan.org/dist/Gimp/Gimp/Fu.pm">Gimp::Fu
+  href="http://search.cpan.org/dist/Gimp/Gimp/Fu.pm#MISCELLANEOUS_FUNCTIONS"><tt>Gimp::Fu</tt>
   docs</a> for more detail<p>
 
-  Note that the normal rules about image and file types are still valid,
-  thus e.g. in order to save an image as a gif file, it must be converted
-  from RGB to an indexed script. Currently this functionality must be
-  included in each script, but it is possible that a future version
-  of Gimp::Fu, includes this conversion as an option. <P>
- 
   Here are two invocations of the scripts declared above, but with output
-  written to a jpg file and a png file. As we said above, we can't save
-  them as gif as the scripts do not index the images.<p>
+  written to a jpg file and a png file.<p>
 
   <table border><tr><th bgcolor=#E0E0FF><a href="perl-gimp-from-shell">perl-gimp-from-shell</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>uni -o /tmp/uni.png -size 100 -color purple 
 <font size=-1 color=red>  2:  </font>basic-logo -font 'utopia 100' -o /tmp/bl.ppm -text "Perl rules" </pre></table><br>
 
-  Another importent use of this interface is that it enables running
-  the perl debugger on the perl-fu scripts.<p>
-  
-  <b>Note:</b> The image is saved to the directory
-  where gimp was started from and not to the directory in which the
-  scripts were invoked. Thus it is recommended to use a complete path.
+  Another important use of this interface is that it enables running
+  the Perl debugger on the perl-fu scripts.<p>
 
-<h3><a name="SEC10.1">10.1. A shell for gimp-perl</a></h3>
+<h3><a name="SEC10.1">10.1. A shell for Gimp-Perl</a></h3>
 
-  When using the perl-server it is not necessary to use <tt>Gimp::Fu</tt>
-  and the <tt>podregister</tt> function. Instead a sub named <tt>on_net</tt>
-  may be declared, which takes as a parameter a reference to a sub
-  routine that is called when gimp starts.
+  When using the Perl-Server it is not necessary to use <tt>Gimp::Fu</tt>
+  and the <tt>podregister</tt> function. Instead you may call
+  <tt>Gimp::on_net</tt>, which takes as a parameter a reference to a
+  sub routine that is called when your script has connected to a GIMP
+  (or started one up).
   <p>
   For a simple but powerful example of the use of the Gimp without
-  Fu, here is a an interactive perl gimp shell that may be run from
+  Fu, here is a an interactive Gimp-Perl shell that may be run from
   the command line:
   <p>
   <table border><tr><th bgcolor=#E0E0FF><a href="pg-shell">pg-shell</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>#!/usr/bin/perl 
-<font size=-1 color=red>  2:  </font>###################################################################### 
-<font size=-1 color=red>  3:  </font>#  An interactive command line shell to gimp. 
-<font size=-1 color=red>  4:  </font>###################################################################### 
-<font size=-1 color=red>  5:  </font>use Gimp ":auto"; 
-<font size=-1 color=red>  6:  </font>use Term::ReadLine; 
-<font size=-1 color=red>  7:  </font> 
-<font size=-1 color=red>  8:  </font>sub interact { 
-<font size=-1 color=red>  9:  </font>    $term = new Term::ReadLine("Gimp"); 
-<font size=-1 color=red> 10:  </font>    while( defined ($_ = $term-&gt;readline("Gimp&gt; "))) { 
-<font size=-1 color=red> 11:  </font>        $res = eval($_) . "\n"; 
-<font size=-1 color=red> 12:  </font>        print("Error: $@"), next if $@; 
-<font size=-1 color=red> 13:  </font>        print "\n"; 
-<font size=-1 color=red> 14:  </font>        gimp_displays_flush(); 
-<font size=-1 color=red> 15:  </font>    } 
-<font size=-1 color=red> 16:  </font>} 
-<font size=-1 color=red> 17:  </font> 
-<font size=-1 color=red> 18:  </font>Gimp::on_net(\&amp;interact); 
-<font size=-1 color=red> 19:  </font> 
-<font size=-1 color=red> 20:  </font>exit main(); 
-<font size=-1 color=red> 21:  </font> </pre></table><br>
+<font size=-1 color=red>  2:  </font> 
+<font size=-1 color=red>  3:  </font>#  An interactive command line shell to GIMP. 
+<font size=-1 color=red>  4:  </font>use Gimp; 
+<font size=-1 color=red>  5:  </font>use Term::ReadLine; 
+<font size=-1 color=red>  6:  </font> 
+<font size=-1 color=red>  7:  </font>Gimp::on_net { 
+<font size=-1 color=red>  8:  </font>    $term = new Term::ReadLine("Gimp"); 
+<font size=-1 color=red>  9:  </font>    while( defined ($_ = $term-&gt;readline("Gimp&gt; "))) { 
+<font size=-1 color=red> 10:  </font>        $res = eval($_) . "\n"; 
+<font size=-1 color=red> 11:  </font>        print("Error: $@"), next if $@; 
+<font size=-1 color=red> 12:  </font>        print "\n"; 
+<font size=-1 color=red> 13:  </font>        Gimp-&gt;displays_flush(); 
+<font size=-1 color=red> 14:  </font>    } 
+<font size=-1 color=red> 15:  </font>}; 
+<font size=-1 color=red> 16:  </font> 
+<font size=-1 color=red> 17:  </font>exit Gimp::main; </pre></table><br>
     <p>
   Here is an example of an interactive session with this shell:
-  <table border><tr><th bgcolor=#E0E0FF><a href="interact">interact</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>Gimp&gt; $img = gimp_image_new(100,100,RGB) 
+  <table border><tr><th bgcolor=#E0E0FF><a href="interact">interact</a><tr><td bgcolor=#FFE0E0><pre><font size=-1 color=red>  1:  </font>Gimp&gt; $img = Gimp::Image-&gt;new(100,100,RGB) 
 <font size=-1 color=red>  2:  </font>Gimp&gt; $drw = $img-&gt;layer_new(100,100,RGB_IMAGE, "bg", 100, NORMAL_MODE) 
-<font size=-1 color=red>  3:  </font>Gimp&gt; $img-&gt;add_layer($drw,-1) 
-<font size=-1 color=red>  4:  </font>Gimp&gt; $img-&gt;display_new 
-<font size=-1 color=red>  5:  </font>Gimp&gt; $drw-&gt;edit_clear </pre></table><br>
+<font size=-1 color=red>  3:  </font>Gimp&gt; $img-&gt;insert_layer($drw,-1, 0) 
+<font size=-1 color=red>  4:  </font>Gimp&gt; Gimp::Display-&gt;new($img) 
+<font size=-1 color=red>  5:  </font>Gimp&gt; $drw-&gt;edit_clear 
+<font size=-1 color=red>  6:  </font>Gimp&gt; print Gimp::Image-&gt;list 
+<font size=-1 color=red>  7:  </font>Gimp::Image-&gt;existing(1) </pre></table><br>
 
 <h2><a name="SEC11">11. End notes</a></h2>
 
@@ -1042,26 +1041,24 @@ on top of a uniform background.
   available to Gimp::Perl scripts have not been covered:
 
   <UL>
-    <LI> The possibility of writing customized Gtk interfaces. </LI>
-    
-    <LI> Writing fullfledged plug-ins that manipulate the tile data
-         through the Perl Data Language (PDL) module.</LI>
-    <LI> Using Perl::Gimp in a CGI environment. </LI>
-    <LI> How to fill with gradients in a plugin </LI>
-    <LI> How to do polygon selections. </LI>
+    <LI> The possibility of writing customized Gtk interfaces (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/example-no-fu">examples/example-no-fu</a></tt> in the Gimp-Perl distribution). </LI>
+
+    <LI> Writing fully-fledged plug-ins that manipulate the tile data
+         through the Perl Data Language (PDL) module (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/map_to_gradient">examples/map_to_gradient</a></tt> in the Gimp-Perl distribution).</LI>
+    <LI> Using Gimp-Perl in a CGI environment. </LI>
+    <LI> How to fill with gradients in a plugin (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/randomblends">examples/randomblends</a></tt> in the Gimp-Perl distribution). </LI>
+    <LI> How to do polygon selections (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/triangle">examples/triangle</a></tt> in the Gimp-Perl distribution). </LI>
   </UL>
 
-  <p>Additionally, the Gimp-Perl distribution also has over 50 example
+  <p>The Gimp-Perl distribution also has over 50 more example
   scripts supplied. Take a look through those for further inspiration!
 
 <h2><a name="SEC12">12. Links and references</a></h2>
 
   <UL>
-    <LI> <A HREF="scheme-tut.html">The scheme tutorial this tutorial is based on</A> </LI>
+    <LI> <a href="http://www.gimp.org">The GIMP home page</a> </LI>
     
-    <LI> <a href="http://www.gimp.org">The Gimp home page</a> </LI>
-    
-    <LI> <A HREF="http://registry.gimp.org/">Gimp Registry with Perl plug-ins</A> </LI>
+    <LI> <A HREF="http://registry.gimp.org/">GIMP Registry with Perl plug-ins</A> </LI>
   </UL>
 
 <hr>

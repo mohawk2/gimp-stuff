@@ -479,9 +479,11 @@ Choosing the default values results in the image:
   href="http://search.cpan.org/dist/Gimp/Gimp.pm#OBJECT-ORIENTED_SYNTAX">Gimp-Perl
   docs</a> for more detail.<p>
 
-  Note that the object oriented syntax is only syntactic sugar that
-  makes the calling syntax cleaner. The error messages are still given
-  in the procedural format.
+  Note that the object-oriented syntax appears to be only syntactic
+  sugar that makes the calling syntax cleaner. The error messages are
+  still given in the procedural format. What is going on is that GIMP,
+  and the library on which it is implemented (Glib), use C in an
+  object-oriented fashion.
 
 <: section("Painting areas with selections") :>
 In the <tt>uni</tt> script the function <tt>gimp_edit_fill</tt> was called
@@ -620,7 +622,7 @@ on top of a uniform background.
     <p>
 
 <: section("Floating selections") :>
-  When a region has been selected through one of the selection routines
+  When a region has been selected through one of the selection routines,
   the area outlined by the selection may be copied to the cut-buffer
   through the <tt>gimp_edit_copy</tt> command. The cut-buffer may
   subsequently be pasted into a different layer through the
@@ -633,61 +635,60 @@ on top of a uniform background.
   the target image before the cut-buffer is pasted. <p>
 
   This is illustrated in the following program, which works on one image
-  and takes as a parameter an another image, which it concatinates to
+  and takes as a parameter another image, which it concatenates to
   the right of the first image. The lines 28-38 shows how the second
   image is copied and glued into the first image.<p>
   <: code_snippet("horiz-cat") :>
 
+  You might notice something very important on lines 7 and 8: we
+  "know" that we'll always pass a layer as the first drawable,
+  but we're checking that anyway. Then we're telling Gimp-Perl the
+  drawable definitely <i>is</i> a layer. The reason for that is that
+  (obviously) <tt>Gimp::Layer</tt> and <tt>Gimp::Drawable</tt> have
+  different methods available to them, and what matters here is that
+  <tt>Gimp::Drawable</tt> does not have a resize method. (i.e. The PDB
+  does not have a <tt>gimp_drawable_resize</tt> function)
+
 <: section("The Perl Server and stand-alone scripts") :>
   So far the scripts have all been started from the menu structure
-  within menu. But there is another possibility and that is to run
-  the scripts from the command line, as a normal perl program. When
-  run this way the script tries to connect to the Perl-Server, and
-  if it fails it will launch gimp on its own. If you plan to run
-  several scripts this way, it is obviously much faster to run the
-  Perl-Server since launching gimp takes quite a bit of time. The
-  perl-server may be started from the Xtns menu.
+  within GIMP. But using <tt>Gimp::Fu</tt> there is another possibility,
+  and that is to run the scripts from the command line, as a normal
+  Perl program. When run this way the script tries to connect to the
+  Perl-Server, and if it fails it will launch a GIMP of its own. If you
+  plan to run several scripts this way, it is obviously much faster to
+  run the Perl-Server since launching GIMP takes quite a bit of time. The
+  Perl-Server may be started from the <tt>Filters/Perl</tt> menu.
   <p>
 
-  When a perl-fu script is run from the command line, the
+  When a <tt>Gimp::Fu</tt> script is run from the command line, the
   result is the same as when it is run through the menus, except
-  of the fact that it may be run with the <tt>--output</tt> parameter
-  in case it will save the result to a file instead of displaying
-  it within gimp. This is great for batch creation of logos, etc. <p>
+  that it may be run with the <tt>--output</tt> parameter.
+  This will save the result to a file instead of displaying
+  it within GIMP. This is great for batch creation of logos, etc. <p>
 
   The filename for the <tt>--output</tt> has some special magic that
   allows to set some special image saving parameters, like interlace,
   quality factor, etc. See the <a
-  href="http://search.cpan.org/dist/Gimp/Gimp/Fu.pm">Gimp::Fu
+  href="http://search.cpan.org/dist/Gimp/Gimp/Fu.pm#MISCELLANEOUS_FUNCTIONS"><tt>Gimp::Fu</tt>
   docs</a> for more detail<p>
 
-  Note that the normal rules about image and file types are still valid,
-  thus e.g. in order to save an image as a gif file, it must be converted
-  from RGB to an indexed script. Currently this functionality must be
-  included in each script, but it is possible that a future version
-  of Gimp::Fu, includes this conversion as an option. <P>
- 
   Here are two invocations of the scripts declared above, but with output
-  written to a jpg file and a png file. As we said above, we can't save
-  them as gif as the scripts do not index the images.<p>
+  written to a jpg file and a png file.<p>
 
   <: code_snippet("perl-gimp-from-shell") :>
 
-  Another importent use of this interface is that it enables running
-  the perl debugger on the perl-fu scripts.<p>
-  
-  <b>Note:</b> The image is saved to the directory
-  where gimp was started from and not to the directory in which the
-  scripts were invoked. Thus it is recommended to use a complete path.
+  Another important use of this interface is that it enables running
+  the Perl debugger on the perl-fu scripts.<p>
 
-<: subsection("A shell for gimp-perl") :>
-  When using the perl-server it is not necessary to use <tt>Gimp::Fu</tt>
-  and the <tt>podregister</tt> function. Instead a sub named <tt>on_net</tt>
-  may be declared, which takes as a parameter a reference to a sub
-  routine that is called when gimp starts.
+<: subsection("A shell for Gimp-Perl") :>
+  When using the Perl-Server it is not necessary to use <tt>Gimp::Fu</tt>
+  and the <tt>podregister</tt> function. Instead you may call
+  <tt>Gimp::on_net</tt>, which takes as a parameter a reference to a
+  sub routine that is called when your script has connected to a GIMP
+  (or started one up).
   <p>
   For a simple but powerful example of the use of the Gimp without
-  Fu, here is a an interactive perl gimp shell that may be run from
+  Fu, here is a an interactive Gimp-Perl shell that may be run from
   the command line:
   <p>
   <: code_snippet("pg-shell") :>
@@ -701,25 +702,23 @@ on top of a uniform background.
   available to Gimp::Perl scripts have not been covered:
 
   <UL>
-    <LI> The possibility of writing customized Gtk interfaces. </LI>
-    
-    <LI> Writing fullfledged plug-ins that manipulate the tile data
-         through the Perl Data Language (PDL) module.</LI>
-    <LI> Using Perl::Gimp in a CGI environment. </LI>
-    <LI> How to fill with gradients in a plugin </LI>
-    <LI> How to do polygon selections. </LI>
+    <LI> The possibility of writing customized Gtk interfaces (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/example-no-fu">examples/example-no-fu</a></tt> in the Gimp-Perl distribution). </LI>
+
+    <LI> Writing fully-fledged plug-ins that manipulate the tile data
+         through the Perl Data Language (PDL) module (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/map_to_gradient">examples/map_to_gradient</a></tt> in the Gimp-Perl distribution).</LI>
+    <LI> Using Gimp-Perl in a CGI environment. </LI>
+    <LI> How to fill with gradients in a plugin (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/randomblends">examples/randomblends</a></tt> in the Gimp-Perl distribution). </LI>
+    <LI> How to do polygon selections (see <tt><a href="http://search.cpan.org/dist/Gimp/examples/triangle">examples/triangle</a></tt> in the Gimp-Perl distribution). </LI>
   </UL>
 
-  <p>Additionally, the Gimp-Perl distribution also has over 50 example
+  <p>The Gimp-Perl distribution also has over 50 more example
   scripts supplied. Take a look through those for further inspiration!
 
 <: section("Links and references") :>
   <UL>
-    <LI> <A HREF="scheme-tut.html">The scheme tutorial this tutorial is based on</A> </LI>
+    <LI> <a href="http://www.gimp.org">The GIMP home page</a> </LI>
     
-    <LI> <a href="http://www.gimp.org">The Gimp home page</a> </LI>
-    
-    <LI> <A HREF="http://registry.gimp.org/">Gimp Registry with Perl plug-ins</A> </LI>
+    <LI> <A HREF="http://registry.gimp.org/">GIMP Registry with Perl plug-ins</A> </LI>
   </UL>
 
 <hr>

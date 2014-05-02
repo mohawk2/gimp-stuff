@@ -1,5 +1,7 @@
-Gimp> $img = gimp_image_new(100,100,RGB)
+Gimp> $img = Gimp::Image->new(100,100,RGB)
 Gimp> $drw = $img->layer_new(100,100,RGB_IMAGE, "bg", 100, NORMAL_MODE)
-Gimp> $img->add_layer($drw,-1)
-Gimp> $img->display_new
+Gimp> $img->insert_layer($drw,-1, 0)
+Gimp> Gimp::Display->new($img)
 Gimp> $drw->edit_clear
+Gimp> print Gimp::Image->list
+Gimp::Image->existing(1)
